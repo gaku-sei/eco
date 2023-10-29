@@ -1,0 +1,16 @@
+[package]
+name = "eco-pack"
+version = "0.1.0"
+edition.workspace = true
+rust-version.workspace = true
+
+[dependencies]
+anyhow.workspace = true
+camino.workspace = true
+clap.workspace = true
+eco-cbz = { workspace = true, features = ["clap"] }
+glob.workspace = true
+sanitize-filename.workspace = true
+thiserror.workspace = true
+tracing.workspace = true
+tracing-subscriber.workspace = true

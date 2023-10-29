@@ -1,0 +1,45 @@
+[workspace]
+resolver = "2"
+members = ["eco-cbz", "eco-converter", "eco-merge", "eco-pack", "eco-viewer"]
+
+[workspace.package]
+rust-version = "1.73.0"
+edition = "2021"
+
+[workspace.dependencies]
+anyhow = "1.0.71"
+async-recursion = "1.0.4"
+async-trait = "0.1.68"
+base64 = "0.21.2"
+bytes = "1.4.0"
+camino = "1.1.4"
+clap = { version = "4.3.5", features = ["derive"] }
+cli-table = "0.4.7"
+dialoguer = "0.10.4"
+dioxus = "0.4.0"
+dioxus-desktop = "0.4.0"
+eco-cbz = { path = "./eco-cbz" }
+eco-pack = { path = "./eco-pack" }
+futures = "0.3.28"
+glob = "0.3.1"
+home = "0.5.5"
+html5ever = "0.26.0"
+image = "0.24.6"
+indicatif = "0.17.5"
+isolang = "2.0"
+markup5ever_rcdom = "0.2.0"
+mime = "0.3.17"
+mobi = "0.8.0"
+pdf = "0.8.1"
+reqwest = "0.11.18"
+reqwest-middleware = "0.2.2"
+reqwest-retry = "0.2.2"
+sanitize-filename = "0.4.0"
+serde = "1.0.164"
+tl = "0.7.7"
+thiserror = "1.0.40"
+tokio = { version = "1.28.2", features = ["full"] }
+tracing = "0.1.37"
+tracing-subscriber = "0.3.17"
+url = "2.4.0"
+zip = "0.6.6"
