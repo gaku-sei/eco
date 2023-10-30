@@ -6,7 +6,7 @@ use std::io::Cursor;
 use camino::Utf8Path;
 use eco_cbz::{
     image::{Image, ReadingOrder},
-    CbzWriter, CbzWriterFinished, COUNTER_SIZE,
+    CbzWriter,
 };
 use glob::glob;
 use tracing::{debug, error};
@@ -35,16 +35,16 @@ pub fn get_images_from_glob(glob_expr: impl AsRef<str>) -> Result<Vec<Image>> {
 }
 
 #[allow(clippy::missing_errors_doc, clippy::missing_panics_doc)]
-pub fn pack_imgs_to_cbz(
+pub fn pack_imgs_to_cbz<'a>(
     imgs: Vec<Image>,
     contrast: Option<f32>,
     brightness: Option<i32>,
     blur: Option<f32>,
     autosplit: bool,
     reading_order: ReadingOrder,
-) -> Result<CbzWriterFinished<Cursor<Vec<u8>>>> {
-    let mut out_cbz_writer = CbzWriter::default();
-    for (i, mut img) in imgs.into_iter().enumerate() {
+) -> Result<CbzWriter<'a, Cursor<Vec<u8>>>> {
+    let mut cbz_writer = CbzWriter::default();
+    for mut img in imgs {
         if let Some(contrast) = contrast {
             img = img.set_contrast(contrast);
         }
@@ -58,14 +58,12 @@ pub fn pack_imgs_to_cbz(
         if img.is_landscape() && autosplit {
             debug!("splitting landscape file");
             let (img_left, img_right) = img.autosplit(reading_order);
-            img_left
-                .insert_into_cbz_writer(&mut out_cbz_writer, format!("{i:0>COUNTER_SIZE$}-1"))?;
-            img_right
-                .insert_into_cbz_writer(&mut out_cbz_writer, format!("{i:0>COUNTER_SIZE$}-2"))?;
+            cbz_writer.insert_image(&img_left)?;
+            cbz_writer.insert_image(&img_right)?;
         } else {
-            img.insert_into_cbz_writer(&mut out_cbz_writer, format!("{i:0>COUNTER_SIZE$}"))?;
+            cbz_writer.insert_image(&img)?;
         }
     }
 
-    Ok(out_cbz_writer.finish()?)
+    Ok(cbz_writer)
 }

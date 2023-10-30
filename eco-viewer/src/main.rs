@@ -16,8 +16,7 @@ pub struct Args {
 fn main() -> Result<()> {
     tracing_subscriber::fmt::init();
     let args = Args::parse();
-    let mut cbz = CbzReader::from_path(args.archive_path)?;
-    eco_viewer::run(&mut cbz)?;
+    eco_viewer::run(CbzReader::try_from_path(args.archive_path)?)?;
 
     Ok(())
 }

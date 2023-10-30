@@ -945,10 +945,10 @@ checksum = "56ce8c6da7551ec6c462cbaf3bfbc75131ebbfa1c944aeaa9dab51ca1c5f0c3b"
 name = "eco-cbz"
 version = "0.1.0"
 dependencies = [
- "bytes",
  "camino",
  "clap",
  "image",
+ "sanitize-filename",
  "thiserror",
  "tracing",
  "zip",
@@ -968,7 +968,6 @@ dependencies = [
  "markup5ever_rcdom",
  "mobi",
  "pdf",
- "sanitize-filename",
  "tl",
  "tracing",
  "tracing-subscriber",
@@ -983,7 +982,6 @@ dependencies = [
  "clap",
  "eco-cbz",
  "glob",
- "sanitize-filename",
 ]
 
 [[package]]
@@ -995,7 +993,6 @@ dependencies = [
  "clap",
  "eco-cbz",
  "glob",
- "sanitize-filename",
  "thiserror",
  "tracing",
  "tracing-subscriber",

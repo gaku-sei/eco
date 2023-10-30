@@ -22,7 +22,7 @@ pub fn convert_to_imgs(path: impl AsRef<Path>) -> Result<Vec<Image>> {
     let mut all_imgs = Vec::with_capacity(imgs.len());
     for_each_fid(version, &dom, |fid| {
         if let Some(img) = imgs.get(fid) {
-            match Image::from_bytes(img.content) {
+            match img.content.try_into() {
                 Ok(img) => all_imgs.push(img),
                 Err(err) => error!("failed to decode image: {err}"),
             };

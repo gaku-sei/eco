@@ -10,7 +10,6 @@ camino.workspace = true
 clap.workspace = true
 eco-cbz = { workspace = true, features = ["clap"] }
 glob.workspace = true
-sanitize-filename.workspace = true
 thiserror.workspace = true
 tracing.workspace = true
 tracing-subscriber.workspace = true

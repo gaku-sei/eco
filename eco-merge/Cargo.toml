@@ -10,4 +10,3 @@ camino.workspace = true
 clap.workspace = true
 eco-cbz.workspace = true
 glob.workspace = true
-sanitize-filename.workspace = true

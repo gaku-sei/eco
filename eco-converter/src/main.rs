@@ -7,7 +7,7 @@ use camino::Utf8PathBuf;
 use clap::{Parser, ValueEnum};
 use eco_cbz::image::ReadingOrder;
 use eco_pack::pack_imgs_to_cbz;
-use tracing::{debug, info};
+use tracing::info;
 
 use crate::mobi::convert_to_imgs as mobi_to_imgs;
 use crate::pdf::convert_to_imgs as pdf_to_imgs;
@@ -65,7 +65,7 @@ fn main() -> Result<()> {
     };
     info!("found {} imgs", imgs.len());
 
-    let out_cbz_writer_finished = pack_imgs_to_cbz(
+    let out_cbz_writer = pack_imgs_to_cbz(
         imgs,
         args.contrast,
         args.brightness,
@@ -74,12 +74,7 @@ fn main() -> Result<()> {
         args.reading_order,
     )?;
 
-    let output_path = args
-        .outdir
-        .join(sanitize_filename::sanitize(format!("{}.cbz", args.name)));
-    debug!("writing cbz file to {output_path}");
-
-    out_cbz_writer_finished.write_to_path(output_path)?;
+    out_cbz_writer.write_to_path(args.outdir.join(format!("{}.cbz", args.name)))?;
 
     Ok(())
 }
