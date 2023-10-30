@@ -11,7 +11,6 @@ anyhow = "1.0.71"
 async-recursion = "1.0.4"
 async-trait = "0.1.68"
 base64 = "0.21.2"
-bytes = "1.4.0"
 camino = "1.1.4"
 clap = { version = "4.3.5", features = ["derive"] }
 cli-table = "0.4.7"

@@ -8,7 +8,6 @@ use camino::Utf8PathBuf;
 use clap::Parser;
 use eco_cbz::image::ReadingOrder;
 use eco_pack::{get_images_from_glob, pack_imgs_to_cbz};
-use tracing::debug;
 
 #[derive(Parser, Debug)]
 #[clap(about, author, version)]
@@ -51,7 +50,7 @@ fn main() -> Result<()> {
     }
     let imgs = get_images_from_glob(args.files_descriptor)?;
 
-    let out_cbz_writer_finished = pack_imgs_to_cbz(
+    let out_cbz_writer = pack_imgs_to_cbz(
         imgs,
         args.contrast,
         args.brightness,
@@ -60,10 +59,7 @@ fn main() -> Result<()> {
         args.reading_order,
     )?;
 
-    let output_path = outdir.join(sanitize_filename::sanitize(format!("{}.cbz", args.name)));
-    debug!("writing cbz file to {output_path}");
-
-    out_cbz_writer_finished.write_to_path(output_path)?;
+    out_cbz_writer.write_to_path(outdir.join(format!("{}.cbz", args.name)))?;
 
     Ok(())
 }

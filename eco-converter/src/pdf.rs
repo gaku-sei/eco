@@ -33,7 +33,7 @@ pub fn convert_to_imgs(path: impl AsRef<Path>) -> Result<Vec<Image>> {
                     }
                 };
                 if let Some(StreamFilter::DCTDecode(_)) = filter {
-                    let img = match Image::from_reader(Cursor::new(&image)) {
+                    let img = match Image::try_from_reader(Cursor::new(&image)) {
                         Ok(img) => img,
                         Err(err) => {
                             error!("image couldn't be read: {err}");

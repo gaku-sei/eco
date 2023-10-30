@@ -5,11 +5,10 @@ use std::{
 };
 
 use image::{io::Reader as ImageReader, DynamicImage, ImageFormat};
-use tracing::debug;
 
-use crate::{CbzWrite, CbzWriterInsertionBuilder, Result};
+use crate::{Error, Result};
 
-#[derive(Debug, Clone, Copy)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord)]
 #[cfg_attr(feature = "clap", derive(clap::ValueEnum))]
 pub enum ReadingOrder {
     Rtl,
@@ -51,7 +50,7 @@ impl Image {
     /// ## Errors
     ///
     /// Fails if the image format can't be guessed or the image can't be decoded
-    pub fn from_reader(reader: impl BufRead + Seek) -> Result<Self> {
+    pub fn try_from_reader(reader: impl BufRead + Seek) -> Result<Self> {
         let reader = ImageReader::new(reader).with_guessed_format()?;
         let format = reader.format();
         Ok(Self {
@@ -64,13 +63,7 @@ impl Image {
     ///
     /// Fails if the image format can't be guessed or the image can't be decoded
     pub fn from_bytes(bytes: &[u8]) -> Result<Self> {
-        let buf_reader = Cursor::new(bytes);
-        let reader = ImageReader::new(buf_reader).with_guessed_format()?;
-        let format = reader.format();
-        Ok(Self {
-            dynamic_image: reader.decode()?,
-            format,
-        })
+        Self::try_from(bytes)
     }
 
     fn from_dynamic_image(dynamic_image: DynamicImage, format: Option<ImageFormat>) -> Self {
@@ -131,26 +124,32 @@ impl Image {
         }
     }
 
+    #[must_use]
+    pub fn dynamic(&self) -> &DynamicImage {
+        &self.dynamic_image
+    }
+
+    #[must_use]
+    pub fn format(&self) -> Option<ImageFormat> {
+        self.format
+    }
+
     pub fn set_format(&mut self, format: ImageFormat) -> &Self {
         self.format = Some(format);
         self
     }
+}
 
-    #[allow(clippy::missing_errors_doc)]
-    pub fn insert_into_cbz_writer(
-        self,
-        cbz_writer: &mut impl CbzWrite,
-        name: impl AsRef<str>,
-    ) -> Result<()> {
-        let mut out = Cursor::new(Vec::new());
-        let format = self.format.unwrap_or(ImageFormat::Png);
-        self.dynamic_image.write_to(&mut out, format)?;
-        let insertion = CbzWriterInsertionBuilder::from_extension(format.extensions_str()[0])
-            .set_bytes_ref(out.get_ref())
-            .build_custom_str(name.as_ref())?;
-        cbz_writer.insert_custom_str(insertion)?;
-        debug!("inserted page into zip");
+impl TryFrom<&[u8]> for Image {
+    type Error = Error;
 
-        Ok(())
+    fn try_from(bytes: &[u8]) -> std::result::Result<Self, Self::Error> {
+        let buf_reader = Cursor::new(bytes);
+        let reader = ImageReader::new(buf_reader).with_guessed_format()?;
+        let format = reader.format();
+        Ok(Self {
+            dynamic_image: reader.decode()?,
+            format,
+        })
     }
 }

@@ -2,10 +2,12 @@
 #![deny(clippy::pedantic)]
 #![allow(non_snake_case)]
 
+use std::io::{Read, Seek};
+
 use base64::Engine;
 use dioxus::{html::input_data::keyboard_types::Key, prelude::*};
 use dioxus_desktop::{Config, WindowBuilder};
-use eco_cbz::CbzRead;
+use eco_cbz::CbzReader;
 use tracing::debug;
 
 #[derive(Debug, thiserror::Error)]
@@ -29,7 +31,7 @@ pub struct AppProps {
 /// ## Errors
 ///
 /// Fails on cbz read error
-pub fn run(cbz_reader: &mut impl CbzRead) -> Result<()> {
+pub fn run(mut cbz_reader: CbzReader<impl Read + Seek>) -> Result<()> {
     let mut imgs = Vec::new();
     cbz_reader.try_for_each(|file| {
         let mut file = file?;

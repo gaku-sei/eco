@@ -4,7 +4,7 @@
 use anyhow::{bail, Result};
 use camino::{Utf8Path, Utf8PathBuf};
 use clap::Parser;
-use eco_cbz::{CbzRead, CbzReader, CbzWrite, CbzWriter, CbzWriterInsertionBuilder};
+use eco_cbz::{CbzReader, CbzWriter};
 use glob::glob;
 
 #[derive(Parser, Debug)]
@@ -27,7 +27,7 @@ fn main() -> Result<()> {
     let mut merged_cbz_writer = CbzWriter::default();
 
     for path in glob(&args.archives_glob)? {
-        let mut current_cbz = CbzReader::from_path(path?)?;
+        let mut current_cbz = CbzReader::try_from_path(path?)?;
 
         current_cbz.try_for_each(|file| {
             let file = file?;
@@ -39,23 +39,13 @@ fn main() -> Result<()> {
                 bail!("Extension couldn't be read from {}", file.name());
             };
 
-            let insertion = CbzWriterInsertionBuilder::from_extension(&extension)
-                .set_bytes_from_reader(file)?
-                .build()?;
-
-            merged_cbz_writer.insert(insertion)?;
+            merged_cbz_writer.insert_cbz_file(file, &extension)?;
 
             Ok::<(), anyhow::Error>(())
         })?;
     }
 
-    let merged_cbz_writer_finished = merged_cbz_writer.finish()?;
-
-    let output_path = args
-        .outdir
-        .join(sanitize_filename::sanitize(format!("{}.cbz", args.name)));
-
-    merged_cbz_writer_finished.write_to_path(output_path)?;
+    merged_cbz_writer.write_to_path(args.outdir.join(format!("{}.cbz", args.name)))?;
 
     Ok(())
 }
