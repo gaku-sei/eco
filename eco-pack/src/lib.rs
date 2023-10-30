@@ -35,14 +35,14 @@ pub fn get_images_from_glob(glob_expr: impl AsRef<str>) -> Result<Vec<Image>> {
 }
 
 #[allow(clippy::missing_errors_doc, clippy::missing_panics_doc)]
-pub fn pack_imgs_to_cbz<'a>(
+pub fn pack_imgs_to_cbz(
     imgs: Vec<Image>,
     contrast: Option<f32>,
     brightness: Option<i32>,
     blur: Option<f32>,
     autosplit: bool,
     reading_order: ReadingOrder,
-) -> Result<CbzWriter<'a, Cursor<Vec<u8>>>> {
+) -> Result<CbzWriter<Cursor<Vec<u8>>>> {
     let mut cbz_writer = CbzWriter::default();
     for mut img in imgs {
         if let Some(contrast) = contrast {

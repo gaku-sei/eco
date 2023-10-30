@@ -4,7 +4,6 @@
 use std::{
     fs::{File, OpenOptions},
     io::{self, Cursor, Read, Seek, Write},
-    marker::PhantomData,
     path::Path,
     result,
 };
@@ -85,17 +84,13 @@ impl<'a> From<CbzFile<'a>> for ZipFile<'a> {
 }
 
 #[derive(Debug)]
-pub struct CbzReader<'a, R> {
+pub struct CbzReader<R> {
     archive: ZipArchive<R>,
-    _lifetime: PhantomData<&'a ()>,
 }
 
-impl<'a, R> CbzReader<'a, R> {
+impl<R> CbzReader<R> {
     pub fn new(archive: ZipArchive<R>) -> Self {
-        Self {
-            archive,
-            _lifetime: PhantomData,
-        }
+        Self { archive }
     }
 
     pub fn archive(&self) -> &ZipArchive<R> {
@@ -107,7 +102,7 @@ impl<'a, R> CbzReader<'a, R> {
     }
 }
 
-impl<'a, R> CbzReader<'a, R>
+impl<R> CbzReader<R>
 where
     R: Read + Seek,
 {
@@ -179,7 +174,7 @@ where
     }
 }
 
-impl<'a> CbzReader<'a, File> {
+impl CbzReader<File> {
     /// Creates `CbzReader` from a path
     ///
     /// ## Errors
@@ -192,7 +187,7 @@ impl<'a> CbzReader<'a, File> {
     }
 }
 
-impl<'a, 'b> CbzReader<'a, Cursor<&'b [u8]>> {
+impl<'b> CbzReader<Cursor<&'b [u8]>> {
     /// Creates `CbzReader` from a bytes slice
     ///
     /// ## Errors
@@ -205,7 +200,7 @@ impl<'a, 'b> CbzReader<'a, Cursor<&'b [u8]>> {
     }
 }
 
-impl<'a> CbzReader<'a, Cursor<Vec<u8>>> {
+impl CbzReader<Cursor<Vec<u8>>> {
     /// Creates `CbzReader` from bytes
     ///
     /// ## Errors
@@ -218,34 +213,29 @@ impl<'a> CbzReader<'a, Cursor<Vec<u8>>> {
     }
 }
 
-impl<'a, R> From<ZipArchive<R>> for CbzReader<'a, R> {
+impl<R> From<ZipArchive<R>> for CbzReader<R> {
     fn from(archive: ZipArchive<R>) -> Self {
         Self::new(archive)
     }
 }
 
-impl<'a, R> From<CbzReader<'a, R>> for ZipArchive<R> {
-    fn from(cbz: CbzReader<'a, R>) -> Self {
+impl<R> From<CbzReader<R>> for ZipArchive<R> {
+    fn from(cbz: CbzReader<R>) -> Self {
         cbz.archive
     }
 }
 
-pub struct CbzWriter<'a, W: Write + Seek> {
+pub struct CbzWriter<W: Write + Seek> {
     archive: ZipWriter<W>,
     size: usize,
-    _lifetime: PhantomData<&'a ()>,
 }
 
-impl<'a, W> CbzWriter<'a, W>
+impl<W> CbzWriter<W>
 where
     W: Write + Seek,
 {
     pub fn new(archive: ZipWriter<W>) -> Self {
-        Self {
-            archive,
-            size: 0,
-            _lifetime: PhantomData,
-        }
+        Self { archive, size: 0 }
     }
 
     /// Creates a `CbzWriter` from a `Write`
@@ -341,7 +331,7 @@ where
     }
 }
 
-impl<'a> CbzWriter<'a, Cursor<Vec<u8>>> {
+impl CbzWriter<Cursor<Vec<u8>>> {
     /// ## Errors
     ///
     /// Same errors as the underlying `ZipWriter::finish` method
@@ -374,13 +364,13 @@ impl<'a> CbzWriter<'a, Cursor<Vec<u8>>> {
     }
 }
 
-impl<'a> Default for CbzWriter<'a, Cursor<Vec<u8>>> {
+impl Default for CbzWriter<Cursor<Vec<u8>>> {
     fn default() -> Self {
         Self::from_writer(Cursor::new(Vec::new()))
     }
 }
 
-impl<'a, W> From<ZipWriter<W>> for CbzWriter<'a, W>
+impl<W> From<ZipWriter<W>> for CbzWriter<W>
 where
     W: Write + Seek,
 {
@@ -389,11 +379,11 @@ where
     }
 }
 
-impl<'a, W> From<CbzWriter<'a, W>> for ZipWriter<W>
+impl<W> From<CbzWriter<W>> for ZipWriter<W>
 where
     W: Write + Seek,
 {
-    fn from(cbz: CbzWriter<'a, W>) -> Self {
+    fn from(cbz: CbzWriter<W>) -> Self {
         cbz.archive
     }
 }
