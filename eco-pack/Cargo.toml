@@ -8,7 +8,7 @@ rust-version.workspace = true
 anyhow.workspace = true
 camino.workspace = true
 clap.workspace = true
-eco-cbz = { workspace = true, features = ["clap"] }
+eco-cbz = { workspace = true, features = ["clap", "metadata"] }
 glob.workspace = true
 thiserror.workspace = true
 tracing.workspace = true

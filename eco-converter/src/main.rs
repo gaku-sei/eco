@@ -65,7 +65,7 @@ fn main() -> Result<()> {
     };
     info!("found {} imgs", imgs.len());
 
-    let out_cbz_writer = pack_imgs_to_cbz(
+    let cbz_writer = pack_imgs_to_cbz(
         imgs,
         args.contrast,
         args.brightness,
@@ -74,7 +74,7 @@ fn main() -> Result<()> {
         args.reading_order,
     )?;
 
-    out_cbz_writer.write_to_path(args.outdir.join(format!("{}.cbz", args.name)))?;
+    cbz_writer.write_to_path(args.outdir.join(format!("{}.cbz", args.name)))?;
 
     Ok(())
 }

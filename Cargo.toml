@@ -14,9 +14,11 @@ base64 = "0.21.2"
 camino = "1.1.4"
 clap = { version = "4.3.5", features = ["derive"] }
 cli-table = "0.4.7"
+chrono = "0.4.31"
 dialoguer = "0.10.4"
 dioxus = "0.4.0"
 dioxus-desktop = "0.4.0"
+dunce = "1.0.4"
 eco-cbz = { path = "./eco-cbz" }
 eco-pack = { path = "./eco-pack" }
 futures = "0.3.28"
@@ -35,6 +37,8 @@ reqwest-middleware = "0.2.2"
 reqwest-retry = "0.2.2"
 sanitize-filename = "0.4.0"
 serde = "1.0.164"
+serde_json = "1.0.107"
+serde_repr = "0.1.16"
 tl = "0.7.7"
 thiserror = "1.0.40"
 tokio = { version = "1.28.2", features = ["full"] }
