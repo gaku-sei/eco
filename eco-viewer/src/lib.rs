@@ -2,9 +2,8 @@
 #![deny(clippy::pedantic)]
 #![allow(non_snake_case)]
 
-use std::io::{Read, Seek};
-
 use base64::Engine;
+use camino::Utf8Path;
 use dioxus::{html::input_data::keyboard_types::Key, prelude::*};
 use dioxus_desktop::{Config, WindowBuilder};
 use eco_cbz::CbzReader;
@@ -13,7 +12,7 @@ use tracing::debug;
 #[derive(Debug, thiserror::Error)]
 pub enum Error {
     #[error("cbz error: {0}")]
-    Cbz(#[from] eco_cbz::Error),
+    Cbz(#[from] eco_cbz::errors::Error),
 
     #[error("zip error: {0}")]
     Zip(#[from] zip::result::ZipError),
@@ -26,18 +25,17 @@ pub struct AppProps {
     imgs: Vec<String>,
 }
 
-/// Starts a new window with the CBZ reader inside
+/// Starts a new window with the viewer inside
 ///
 /// ## Errors
 ///
-/// Fails on cbz read error
-pub fn run(mut cbz_reader: CbzReader<impl Read + Seek>) -> Result<()> {
+/// Fails on file read error
+pub fn run(path: impl AsRef<Utf8Path>) -> Result<()> {
+    let path = path.as_ref();
+    let mut cbz_reader = CbzReader::try_from_path(path)?;
     let mut imgs = Vec::new();
-    cbz_reader.try_for_each(|file| {
-        let mut file = file?;
-        let bytes = file.to_bytes()?;
-        let base64 = base64::engine::general_purpose::STANDARD.encode(&*bytes);
-        imgs.push(base64);
+    cbz_reader.try_for_each(|image| {
+        imgs.push(base64::engine::general_purpose::STANDARD.encode(image?.try_into_bytes()?));
 
         Ok::<_, Error>(())
     })?;
@@ -47,7 +45,7 @@ pub fn run(mut cbz_reader: CbzReader<impl Read + Seek>) -> Result<()> {
         AppProps { imgs },
         Config::default()
             .with_custom_head(r#"<script src="https://cdn.tailwindcss.com"></script>"#.to_string())
-            .with_window(WindowBuilder::default().with_title("Cbz Reader")),
+            .with_window(WindowBuilder::default().with_title(format!("Eco Viewer - {path}"))),
     );
 
     Ok(())

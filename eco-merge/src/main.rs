@@ -1,8 +1,8 @@
 #![deny(clippy::all)]
 #![deny(clippy::pedantic)]
 
-use anyhow::{bail, Result};
-use camino::{Utf8Path, Utf8PathBuf};
+use anyhow::Result;
+use camino::Utf8PathBuf;
 use clap::Parser;
 use eco_cbz::{CbzReader, CbzWriter};
 use glob::glob;
@@ -29,17 +29,8 @@ fn main() -> Result<()> {
     for path in glob(&args.archives_glob)? {
         let mut current_cbz = CbzReader::try_from_path(path?)?;
 
-        current_cbz.try_for_each(|file| {
-            let file = file?;
-
-            let Some(extension) = Utf8Path::new(file.name())
-                .extension()
-                .map(ToString::to_string)
-            else {
-                bail!("Extension couldn't be read from {}", file.name());
-            };
-
-            merged_cbz_writer.insert_cbz_file(file, &extension)?;
+        current_cbz.try_for_each(|image| {
+            merged_cbz_writer.insert(image?)?;
 
             Ok::<(), anyhow::Error>(())
         })?;

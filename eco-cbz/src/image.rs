@@ -1,12 +1,13 @@
 use std::{
     fmt::Display,
-    io::{BufRead, Cursor, Seek},
+    io::{BufRead, Cursor, Read, Seek},
     path::Path,
 };
 
 use image::{io::Reader as ImageReader, DynamicImage, ImageFormat};
+use zip::read::ZipFile;
 
-use crate::{Error, Result};
+use crate::errors::{Error, Result};
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord)]
 #[cfg_attr(feature = "clap", derive(clap::ValueEnum))]
@@ -62,8 +63,21 @@ impl Image {
     /// ## Errors
     ///
     /// Fails if the image format can't be guessed or the image can't be decoded
-    pub fn from_bytes(bytes: &[u8]) -> Result<Self> {
-        Self::try_from(bytes)
+    pub fn try_from_bytes(bytes: &[u8]) -> Result<Self> {
+        let buf = Cursor::new(bytes);
+        let reader = ImageReader::new(buf).with_guessed_format()?;
+        let format = reader.format();
+        Ok(Self {
+            dynamic_image: reader.decode()?,
+            format,
+        })
+    }
+
+    pub fn try_from_zip_file(mut file: ZipFile<'_>) -> Result<Self> {
+        let mut buf = Vec::with_capacity(file.size() as usize);
+        file.read_to_end(&mut buf)?;
+
+        Self::try_from_bytes(&buf)
     }
 
     fn from_dynamic_image(dynamic_image: DynamicImage, format: Option<ImageFormat>) -> Self {
@@ -138,18 +152,43 @@ impl Image {
         self.format = Some(format);
         self
     }
+
+    pub fn try_into_bytes(self) -> Result<Vec<u8>> {
+        let mut buf = Cursor::new(Vec::new());
+        self.dynamic_image
+            .write_to(&mut buf, self.format.unwrap_or(ImageFormat::Png))?;
+        Ok(buf.into_inner())
+    }
+}
+
+impl TryFrom<Image> for Vec<u8> {
+    type Error = Error;
+
+    fn try_from(image: Image) -> Result<Self> {
+        image.try_into_bytes()
+    }
+}
+
+impl<'a> TryFrom<ZipFile<'a>> for Image {
+    type Error = Error;
+
+    fn try_from(file: ZipFile<'a>) -> Result<Self> {
+        Self::try_from_zip_file(file)
+    }
 }
 
 impl TryFrom<&[u8]> for Image {
     type Error = Error;
 
-    fn try_from(bytes: &[u8]) -> std::result::Result<Self, Self::Error> {
-        let buf_reader = Cursor::new(bytes);
-        let reader = ImageReader::new(buf_reader).with_guessed_format()?;
-        let format = reader.format();
-        Ok(Self {
-            dynamic_image: reader.decode()?,
-            format,
-        })
+    fn try_from(bytes: &[u8]) -> Result<Self> {
+        Self::try_from_bytes(bytes)
+    }
+}
+
+impl TryFrom<Vec<u8>> for Image {
+    type Error = Error;
+
+    fn try_from(bytes: Vec<u8>) -> Result<Self> {
+        Self::try_from_bytes(&bytes)
     }
 }

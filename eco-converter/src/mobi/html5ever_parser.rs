@@ -5,7 +5,7 @@ use eco_cbz::image::Image;
 use html5ever::{parse_document, tendril::TendrilSink, ParseOpts};
 use markup5ever_rcdom::{Node, NodeData, RcDom};
 use mobi::Mobi;
-use tracing::error;
+use tracing::{error, warn};
 
 use crate::utils::base_32;
 
@@ -25,7 +25,7 @@ pub fn convert_to_imgs(path: impl AsRef<Path>) -> Result<Vec<Image>> {
                 Err(err) => error!("failed to decode image: {err}"),
             };
         } else {
-            println!("unknown fid {fid}");
+            warn!("unknown fid {fid}");
         }
     });
     Ok(all_imgs)
@@ -69,7 +69,7 @@ where
                         // Encoding may be broken so we use a "best effort" strategy
                         // instead of simply extracting the fid and mime type from the string
                         let Some(index) = src.find("?mime=") else {
-                            println!("mime type not found for {src}");
+                            warn!("mime type not found for {src}");
                             continue;
                         };
                         // We assume the code is running on a 64bit system, so it's safe to unwrap

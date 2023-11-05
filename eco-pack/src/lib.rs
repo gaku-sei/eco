@@ -58,10 +58,10 @@ pub fn pack_imgs_to_cbz(
         if img.is_landscape() && autosplit {
             debug!("splitting landscape file");
             let (img_left, img_right) = img.autosplit(reading_order);
-            cbz_writer.insert_image(&img_left)?;
-            cbz_writer.insert_image(&img_right)?;
+            cbz_writer.insert(img_left)?;
+            cbz_writer.insert(img_right)?;
         } else {
-            cbz_writer.insert_image(&img)?;
+            cbz_writer.insert(img)?;
         }
     }
 
