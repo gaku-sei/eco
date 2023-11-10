@@ -13,7 +13,9 @@ dioxus.workspace = true
 dioxus-desktop.workspace = true
 dunce.workspace = true
 eco-cbz = { workspace = true, features = ["metadata"] }
+epub.workspace = true
 thiserror.workspace = true
+tl.workspace = true
 tracing.workspace = true
 tracing-subscriber.workspace = true
 zip.workspace = true
