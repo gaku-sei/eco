@@ -21,11 +21,12 @@ dioxus-desktop = "0.4.0"
 dunce = "1.0.4"
 eco-cbz = { path = "./eco-cbz" }
 eco-pack = { path = "./eco-pack" }
+epub = "2.1.1"
 futures = "0.3.28"
 glob = "0.3.1"
 home = "0.5.5"
 html5ever = "0.26.0"
-image = "0.24.6"
+image = "0.24.7"
 indicatif = "0.17.5"
 isolang = "2.0"
 markup5ever_rcdom = "0.2.0"

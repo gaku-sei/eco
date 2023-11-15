@@ -46,15 +46,28 @@ where
     R: Read + Seek,
 {
     pub fn len(&self) -> usize {
-        self.archive.len()
+        self.file_names().len()
     }
 
     pub fn is_empty(&self) -> bool {
         self.len() == 0
     }
 
-    pub fn file_names(&self) -> impl Iterator<Item = &str> {
-        self.archive.file_names()
+    pub fn file_names(&self) -> Vec<String> {
+        let mut file_names = self
+            .archive
+            .file_names()
+            .filter(|file_name| {
+                let path = Utf8Path::new(file_name);
+                let Some(ext) = path.extension() else {
+                    return false;
+                };
+                ext != "xml"
+            })
+            .map(ToString::to_string)
+            .collect::<Vec<_>>();
+        file_names.sort();
+        file_names
     }
 
     /// Lookup the image by `name` in Cbz and returns an `Image`
@@ -73,11 +86,7 @@ where
     where
         F: FnMut(Result<Image>),
     {
-        // We need the extra allocations since `read_by_name` takes a mut ref
-        let mut file_names = self.file_names().map(Into::into).collect::<Vec<String>>();
-        file_names.sort();
-
-        for file_name in file_names {
+        for file_name in self.file_names() {
             f(self.read_by_name(&file_name));
         }
     }
@@ -92,10 +101,7 @@ where
     where
         F: FnMut(Result<Image>) -> Result<(), E>,
     {
-        let mut file_names = self.file_names().map(Into::into).collect::<Vec<String>>();
-        file_names.sort();
-
-        for file_name in file_names {
+        for file_name in self.file_names() {
             f(self.read_by_name(&file_name))?;
         }
 
