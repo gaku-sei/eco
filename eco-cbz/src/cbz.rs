@@ -1,5 +1,4 @@
-#![deny(clippy::all)]
-#![deny(clippy::pedantic)]
+#![deny(clippy::all, clippy::pedantic)]
 
 use std::{
     fs::{File, OpenOptions},
@@ -9,7 +8,7 @@ use std::{
 
 use camino::Utf8Path;
 use tracing::debug;
-use zip::{write::FileOptions, ZipArchive, ZipWriter};
+use zip::{read::ZipFile, write::FileOptions, ZipArchive, ZipWriter};
 
 pub use crate::errors::{Error, Result};
 use crate::image::Image;
@@ -79,6 +78,13 @@ where
     pub fn read_by_name(&mut self, name: &str) -> Result<Image> {
         let file = self.archive.by_name(name)?;
         file.try_into()
+    }
+
+    /// ## Errors
+    ///
+    /// Fails if the content can't be read
+    pub fn raw_read_by_name(&mut self, name: &str) -> Result<ZipFile<'_>> {
+        Ok(self.archive.by_name(name)?)
     }
 
     /// Iterate over images present in the Cbz.

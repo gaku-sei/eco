@@ -1,5 +1,4 @@
-#![deny(clippy::all)]
-#![deny(clippy::pedantic)]
+#![deny(clippy::all, clippy::pedantic)]
 
 use std::{env, fs::create_dir};
 

@@ -1,4 +1,4 @@
-#![deny(clippy::pedantic)]
+#![deny(clippy::all, clippy::pedantic)]
 
 use std::fs;
 

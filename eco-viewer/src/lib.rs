@@ -1,185 +1,52 @@
-#![deny(clippy::all)]
-#![deny(clippy::pedantic)]
-#![allow(non_snake_case)]
+#![deny(clippy::all, clippy::pedantic)]
+// Necessary for Dioxus
+#![allow(non_snake_case, clippy::ignored_unit_patterns)]
 
-use std::{
-    fs::File,
-    io::{BufReader, Read, Seek},
-    str::FromStr,
-};
+use std::{cell::Cell, thread};
 
-use base64::Engine;
 use camino::Utf8Path;
-use clap::ValueEnum;
-use dioxus::{html::input_data::keyboard_types::Key, prelude::*};
+use dioxus::{
+    html::{geometry::WheelDelta, input_data::keyboard_types::Key},
+    prelude::*,
+};
 use dioxus_desktop::{Config, WindowBuilder};
-use eco_cbz::CbzReader;
-use tl::{HTMLTag, ParserOptions, VDom};
-use tracing::debug;
+use doc::try_load_shared_doc_from_path;
+use futures::{channel::mpsc, executor::block_on, SinkExt, StreamExt};
+use tracing::{debug, error};
 
-#[derive(Debug, Clone, Copy, PartialEq, Eq, ValueEnum)]
-pub enum FileType {
-    #[clap(name = "cbz")]
-    Cbz,
-    #[clap(skip, name = "epub")]
-    EPub,
-}
+use crate::components::doc_page::DocPage;
+pub use crate::doc::FileType;
+use crate::doc::SharedDoc;
+use crate::errors::Result;
 
-impl FromStr for FileType {
-    type Err = Error;
+mod components;
+mod doc;
+mod errors;
+mod measure;
 
-    fn from_str(s: &str) -> Result<Self> {
-        match s.to_lowercase().as_str() {
-            "cbz" => Ok(FileType::Cbz),
-            "epub" => Ok(FileType::EPub),
-            _ => Err(Error::InvalidFileType(s.to_string())),
-        }
-    }
-}
-
-#[derive(Debug, thiserror::Error)]
-pub enum Error {
-    #[error("cbz error: {0}")]
-    Cbz(#[from] eco_cbz::errors::Error),
-
-    #[error("epub doc error: {0}")]
-    EpubDoc(#[from] epub::doc::DocError),
-
-    #[error("zip error: {0}")]
-    Zip(#[from] zip::result::ZipError),
-
-    #[error("invalid file type: {0}")]
-    InvalidFileType(String),
-}
-
-type Result<T, E = Error> = std::result::Result<T, E>;
-
-pub struct AppProps {
-    archive: Box<RefCell<dyn Doc>>,
-}
-
-pub trait Doc {
-    fn load_page(&mut self, page: usize) -> Option<String>;
-
-    fn render_page<'a, 'b>(&mut self, page: usize) -> Option<LazyNodes<'a, 'b>>;
-
-    fn len(&self) -> usize;
-
-    fn is_empty(&self) -> bool {
-        self.len() == 0
-    }
-}
-
-pub struct CbzDoc<T> {
-    archive: CbzReader<T>,
-    file_names: Vec<String>,
-}
-
-impl CbzDoc<File> {
-    fn try_from_path(path: &Utf8Path) -> Result<Self> {
-        let archive = CbzReader::try_from_path(path)?;
-        let file_names = archive.file_names();
-        Ok(Self {
-            archive,
-            file_names,
-        })
-    }
-}
-
-impl Doc for CbzDoc<File> {
-    fn load_page(&mut self, page: usize) -> Option<String> {
-        let file_name = self.file_names.get(page - 1)?;
-        let image = self.archive.read_by_name(file_name.as_str()).ok()?;
-        let bytes = image.try_into_bytes().ok()?;
-        Some(base64::engine::general_purpose::STANDARD.encode(bytes))
-    }
-
-    fn render_page<'a, 'b>(&mut self, page: usize) -> Option<LazyNodes<'a, 'b>> {
-        self.load_page(page).map(|content| {
-            rsx!(img {
-                class: "h-full w-full",
-                src: "data:image/png;base64,{content}"
-            })
-        })
-    }
-
-    fn len(&self) -> usize {
-        self.archive.len()
-    }
-}
-
-pub struct EpubDoc<T: Read + Seek> {
-    doc: epub::doc::EpubDoc<T>,
-}
-
-impl EpubDoc<BufReader<File>> {
-    fn try_from_path(path: &Utf8Path) -> Result<Self> {
-        Ok(Self {
-            doc: epub::doc::EpubDoc::new(path)?,
-        })
-    }
-
-    fn for_each_tag_mut<F>(dom: &mut VDom, selector: &str, mut f: F)
-    where
-        F: FnMut(&mut HTMLTag<'_>),
-    {
-        let Some(node_handles) = dom.query_selector(selector) else {
-            debug!("no nodes found");
-            return;
-        };
-        for node_handle in node_handles.collect::<Vec<_>>() {
-            let Some(node) = node_handle.get_mut(dom.parser_mut()) else {
-                debug!("node not found {}", node_handle.get_inner());
-                continue;
-            };
-            let Some(tag) = node.as_tag_mut() else {
-                debug!("node is not a tag {node:#?}");
-                continue;
-            };
-            f(tag);
-        }
-    }
-}
-
-impl Doc for EpubDoc<BufReader<File>> {
-    fn load_page(&mut self, page: usize) -> Option<String> {
-        self.doc.set_current_page(page - 1);
-        let content = self.doc.get_current_with_epub_uris().ok()?;
-        let content = String::from_utf8_lossy(&content);
-        let mut dom = tl::parse(content.as_ref(), ParserOptions::default()).ok()?;
-        Self::for_each_tag_mut(&mut dom, "img", |tag| {
-            let Some(Some(src)) = tag.attributes_mut().get_mut("src") else {
-                return;
-            };
-            let Some(res) = self
-                .doc
-                .get_resource_by_path(&src.as_utf8_str().as_ref()[7..])
-            else {
-                return;
-            };
-            if let Some(bytes) = Some(base64::engine::general_purpose::STANDARD.encode(res)) {
-                *src = format!("data:image/png;base64,{bytes}").try_into().unwrap();
+fn load_pages<F>(
+    doc: SharedDoc,
+    max_page: usize,
+    mut page_loaded_sender: UnboundedSender<()>,
+    done: F,
+) where
+    F: 'static + Send + FnOnce(),
+{
+    thread::spawn(move || {
+        for page in 1..=max_page {
+            let mut doc = doc.write().unwrap();
+            if let Err(err) = doc.load_page(page) {
+                error!("page load failed: {err}");
             }
-        });
-        Some(dom.outer_html())
-    }
-
-    fn render_page<'a, 'b>(&mut self, page: usize) -> Option<LazyNodes<'a, 'b>> {
-        self.load_page(page).map(|content| {
-            rsx!(div {
-                class: "h-full w-full aspect-[11/16]",
-                iframe {
-                    class: "h-full w-full",
-                    src: "data:text/html;charset=utf-8,{content}"
-                }
-            })
-        })
-    }
-
-    fn len(&self) -> usize {
-        // FIXME: Wrong size?
-        self.doc.get_num_pages()
-    }
+            drop(doc);
+            // Gives some breath to the UI
+            std::thread::sleep(std::time::Duration::from_millis(1));
+            if let Err(err) = block_on(page_loaded_sender.send(())) {
+                error!("page loaded channel error: {err}");
+            }
+        }
+        done();
+    });
 }
 
 /// Starts a new window with the viewer inside
@@ -187,16 +54,25 @@ impl Doc for EpubDoc<BufReader<File>> {
 /// ## Errors
 ///
 /// Fails on file read error
+///
+/// ## Panics
 pub fn run(path: impl AsRef<Utf8Path>, type_: FileType) -> Result<()> {
     let path = path.as_ref();
-    let archive: Box<RefCell<dyn Doc>> = match type_ {
-        FileType::Cbz => Box::new(RefCell::new(CbzDoc::try_from_path(path)?)),
-        FileType::EPub => Box::new(RefCell::new(EpubDoc::try_from_path(path)?)),
-    };
+    let doc = try_load_shared_doc_from_path(type_, path)?;
+    let (page_loaded_sender, page_loaded_receiver) = mpsc::unbounded::<()>();
+    let max_page = doc.read().unwrap().max_page();
+    let measure =
+        crate::measure::Measure::new("total document loading time", crate::measure::Precision::Ms);
+
+    load_pages(doc.clone(), max_page, page_loaded_sender, || drop(measure));
 
     dioxus_desktop::launch_with_props(
         App,
-        AppProps { archive },
+        AppProps {
+            doc,
+            max_page,
+            page_loaded_receiver: Cell::new(Some(page_loaded_receiver)),
+        },
         Config::default()
             .with_custom_head(
                 r#"
@@ -214,15 +90,72 @@ pub fn run(path: impl AsRef<Utf8Path>, type_: FileType) -> Result<()> {
     Ok(())
 }
 
+pub struct AppProps {
+    doc: SharedDoc,
+    max_page: usize,
+    // Wrapped in an `Option` so it can be moved out from the struct
+    page_loaded_receiver: Cell<Option<mpsc::UnboundedReceiver<()>>>,
+}
+
+#[allow(clippy::ignored_unit_patterns, clippy::too_many_lines)]
 fn App(cx: Scope<AppProps>) -> Element {
-    let max_page = use_state(cx, || cx.props.archive.borrow().len());
+    let page_loaded_receiver = cx.props.page_loaded_receiver.replace(None);
+    // Forces reactivity on page loaded
+    let nb_loaded_pages = use_state(cx, || 0);
     let current_page = use_state(cx, || 1_usize);
+    #[allow(clippy::cast_precision_loss)]
+    let progress = use_memo(cx, (nb_loaded_pages,), |(nb_loaded_pages,)| {
+        1.0 / (cx.props.max_page as f32) * (*nb_loaded_pages.get() as f32) * 100.0
+    });
+    let current_content = use_memo(
+        cx,
+        (current_page, nb_loaded_pages),
+        |(current_page, _nb_loaded_pages)| {
+            let doc = cx.props.doc.read().unwrap();
+            doc.content_for_page(*current_page.get())
+        },
+    );
+
+    use_future!(cx, || {
+        to_owned![nb_loaded_pages];
+        async move {
+            let mut page_loaded_receiver =
+                page_loaded_receiver.expect("page loaded receiver to be accessed once");
+            while page_loaded_receiver.next().await.is_some() {
+                nb_loaded_pages.modify(|nb_loaded_pages| *nb_loaded_pages + 1);
+            }
+        }
+    });
 
     cx.render(rsx! {
         div {
-            class: "p-2 w-full h-screen flex flex-col gap-1 items-center outline-none",
+            class: "w-full h-screen flex flex-col gap-1 items-center outline-none",
             autofocus: true,
             tabindex: -1,
+            onwheel: move |evt| {
+                let delta = match evt.delta() {
+                    WheelDelta::Pixels(px) => px.y,
+                    WheelDelta::Lines(lines) => lines.y,
+                    WheelDelta::Pages(pages) => pages.y,
+                };
+                if delta < 0.0 {
+                    let page = *current_page.get();
+                    if page == 1 {
+                        return;
+                    }
+
+                    current_page.set(page - 1);
+                    debug!("reading index {}", page - 2);
+                } else {
+                    let page = *current_page.get();
+                    if page == *nb_loaded_pages.get() {
+                        return;
+                    }
+
+                    current_page.set(page + 1);
+                    debug!("reading index {}", page);
+                }
+            },
             onkeydown: move |evt| {
                 match evt.key() {
                     Key::ArrowLeft | Key::ArrowUp => {
@@ -236,7 +169,7 @@ fn App(cx: Scope<AppProps>) -> Element {
                     },
                     Key::ArrowRight | Key::ArrowDown => {
                         let page = *current_page.get();
-                        if page == *max_page.get() {
+                        if page == *nb_loaded_pages.get() {
                             return;
                         }
 
@@ -247,11 +180,23 @@ fn App(cx: Scope<AppProps>) -> Element {
                 }
             },
             div {
-                class: "h-[calc(100%-2rem)] shadow-lg",
-                cx.props.archive.borrow_mut().render_page(*current_page.get())
+                class: "relative h-2 w-full shrink-0 px-2 mt-1",
+                if *nb_loaded_pages.get() < cx.props.max_page  {
+                    rsx!(progress {
+                        class: "progress progress-flat-primary absolute h-2 w-[calc(100%-1rem)]",
+                        value: "{progress}",
+                        max: "100"
+                    })
+                }
             }
             div {
-                class: "flex flex-row items-center justify-center gap-1 h-8",
+                class: "flex flex-col h-full w-full items-center justify-center",
+                if let Some(current_content) = current_content {
+                    rsx!(DocPage { doc: cx.props.doc.clone(), content: current_content })
+                }
+            }
+            div {
+                class: "flex flex-row items-center justify-center gap-1 h-8 mb-2",
                 button {
                     class: "btn btn-outline-primary btn-sm",
                     onclick: move |_evt| {
@@ -267,13 +212,13 @@ fn App(cx: Scope<AppProps>) -> Element {
                 },
                 span {
                     class: "flex flex-row items-center justify-center bg-backgroundSecondary h-8 px-2 rounded-sm",
-                     "{current_page} / {max_page}"
+                     "{current_page} / {nb_loaded_pages}"
                 },
                 button {
                     class: "btn btn-outline-primary btn-sm",
                     onclick: move |_evt| {
                         let page = *current_page.get();
-                        if page == *max_page.get() {
+                        if page == *nb_loaded_pages.get() {
                             return;
                         }
 
