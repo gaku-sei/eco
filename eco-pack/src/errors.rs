@@ -3,14 +3,17 @@ pub enum Error {
     #[error("error: {0}")]
     Generic(String),
 
-    #[error("Glob error: {0}")]
+    #[error("glob error: {0}")]
     Glob(#[from] glob::GlobError),
 
-    #[error("Glob pattern error: {0}")]
+    #[error("glob pattern error: {0}")]
     GlobPattern(#[from] glob::PatternError),
 
-    #[error("Cbz error: {0}")]
-    Image(#[from] eco_cbz::Error),
+    #[error("cbz error: {0}")]
+    Cbz(#[from] eco_cbz::Error),
+
+    #[error("io error: {0}")]
+    Io(#[from] std::io::Error),
 }
 
 pub type Result<T, E = Error> = std::result::Result<T, E>;

@@ -1,3 +1,5 @@
+#![deny(clippy::all, clippy::pedantic)]
+
 pub mod cbz;
 pub mod cbz_metadata;
 pub mod errors;

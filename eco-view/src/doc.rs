@@ -7,18 +7,15 @@ use std::{
 
 use base64::Engine;
 use camino::Utf8Path;
-use clap::ValueEnum;
 use eco_cbz::CbzReader;
 use tl::{HTMLTag, ParserOptions, VDom};
 use tracing::debug;
 
 use crate::errors::{Error, Result};
 
-#[derive(Debug, Clone, Copy, PartialEq, Eq, ValueEnum)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum FileType {
-    #[clap(name = "cbz")]
     Cbz,
-    #[clap(skip, name = "epub")]
     EPub,
 }
 

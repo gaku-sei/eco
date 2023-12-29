@@ -1,8 +1,8 @@
 #![deny(clippy::all, clippy::pedantic)]
 
-use std::io::Cursor;
+use std::{env, fs::create_dir_all, io::Cursor};
 
-use camino::Utf8Path;
+use camino::{Utf8Path, Utf8PathBuf};
 use eco_cbz::{
     image::{Image, ReadingOrder},
     CbzWriter,
@@ -10,7 +10,7 @@ use eco_cbz::{
 use glob::glob;
 use tracing::{debug, error};
 
-use crate::errors::Result;
+pub use crate::errors::{Error, Result};
 
 pub mod errors;
 
@@ -65,4 +65,58 @@ pub fn pack_imgs_to_cbz(
     }
 
     Ok(cbz_writer)
+}
+
+#[derive(Debug)]
+pub struct PackOptions {
+    /// A glob that matches all the files to pack
+    pub files_descriptor: String,
+
+    /// The output directory for the merged archive
+    pub outdir: Utf8PathBuf,
+
+    /// The merged archive name
+    pub name: String,
+
+    /// Adjust images contrast
+    pub contrast: Option<f32>,
+
+    /// Adjust images brightness
+    pub brightness: Option<i32>,
+
+    /// Blur image (slow with big numbers)
+    pub blur: Option<f32>,
+
+    /// Automatically split landscape images into 2 pages
+    pub autosplit: bool,
+
+    /// Reading order
+    pub reading_order: ReadingOrder,
+}
+
+#[allow(clippy::missing_errors_doc)]
+pub fn pack(opts: PackOptions) -> Result<()> {
+    let Ok(current_dir) = Utf8PathBuf::from_path_buf(env::current_dir()?) else {
+        return Err(Error::Generic(
+            "current dir is not a valid utf8 path".to_string(),
+        ));
+    };
+    let outdir = current_dir.join(&opts.outdir);
+    if !outdir.exists() {
+        create_dir_all(&*outdir)?;
+    }
+    let imgs = get_images_from_glob(opts.files_descriptor)?;
+
+    let cbz_writer = pack_imgs_to_cbz(
+        imgs,
+        opts.contrast,
+        opts.brightness,
+        opts.blur,
+        opts.autosplit,
+        opts.reading_order,
+    )?;
+
+    cbz_writer.write_to_path(outdir.join(format!("{}.cbz", opts.name)))?;
+
+    Ok(())
 }

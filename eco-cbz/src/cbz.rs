@@ -1,5 +1,3 @@
-#![deny(clippy::all, clippy::pedantic)]
-
 use std::{
     fs::{File, OpenOptions},
     io::{Cursor, Read, Seek, Write},

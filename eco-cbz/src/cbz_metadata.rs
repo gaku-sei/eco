@@ -73,6 +73,7 @@ pub enum Month {
 }
 
 impl Month {
+    #[must_use]
     pub fn as_str(self) -> &'static str {
         match self {
             Self::Jan => "January",
@@ -150,6 +151,7 @@ pub struct ComicBookInfoV1 {
 }
 
 impl ComicBookInfoV1 {
+    #[must_use]
     pub fn new() -> Self {
         Self::default()
     }
@@ -264,6 +266,7 @@ pub struct UnofficialMetadata {
 }
 
 impl UnofficialMetadata {
+    #[must_use]
     pub fn new() -> Self {
         Self::default()
     }
@@ -300,13 +303,8 @@ impl UnofficialMetadata {
         key: impl Into<String>,
         value: impl Serialize,
     ) -> Result<Self> {
-        if self.extra.is_none() {
-            self.extra = Some(HashMap::new());
-        }
-        self.extra
-            .as_mut()
-            .unwrap()
-            .insert(key.into(), serde_json::to_value(value)?);
+        let extra = self.extra.get_or_insert(HashMap::new());
+        extra.insert(key.into(), serde_json::to_value(value)?);
 
         Ok(self)
     }

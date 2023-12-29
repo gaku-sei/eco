@@ -1,0 +1,17 @@
+[package]
+name = "eco"
+version = "0.1.0"
+edition.workspace = true
+rust-version.workspace = true
+
+[dependencies]
+camino.workspace = true
+clap.workspace = true
+eco-cbz.workspace = true
+eco-convert.workspace = true
+eco-merge.workspace = true
+eco-pack.workspace = true
+eco-view.workspace = true
+thiserror.workspace = true
+tracing.workspace = true
+tracing-subscriber.workspace = true
