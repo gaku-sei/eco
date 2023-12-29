@@ -12,7 +12,7 @@ pub struct DocPageProps<'a> {
 pub fn DocPage<'a, 'b: 'a>(cx: Scope<'a, DocPageProps<'b>>) -> Element<'a> {
     let content = cx.props.content;
 
-    match *cx.props.doc.read().unwrap() {
+    match *cx.props.doc.lock().unwrap() {
         Doc::Cbz { .. } => cx.render(rsx!(img {
             class: "h-px grow",
             src: "data:image/png;base64,{content}"

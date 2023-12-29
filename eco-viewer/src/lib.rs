@@ -34,13 +34,13 @@ fn load_pages<F>(
 {
     thread::spawn(move || {
         for page in 1..=max_page {
-            let mut doc = doc.write().unwrap();
+            let mut doc = doc.lock().unwrap();
             if let Err(err) = doc.load_page(page) {
                 error!("page load failed: {err}");
             }
             drop(doc);
             // Gives some breath to the UI
-            std::thread::sleep(std::time::Duration::from_millis(1));
+            std::thread::sleep(std::time::Duration::from_millis(1000 / 60));
             if let Err(err) = block_on(page_loaded_sender.send(())) {
                 error!("page loaded channel error: {err}");
             }
@@ -58,13 +58,14 @@ fn load_pages<F>(
 /// ## Panics
 pub fn run(path: impl AsRef<Utf8Path>, type_: FileType) -> Result<()> {
     let path = path.as_ref();
-    let doc = try_load_shared_doc_from_path(type_, path)?;
+    let (max_page, doc) = try_load_shared_doc_from_path(type_, path)?;
     let (page_loaded_sender, page_loaded_receiver) = mpsc::unbounded::<()>();
-    let max_page = doc.read().unwrap().max_page();
     let measure =
         crate::measure::Measure::new("total document loading time", crate::measure::Precision::Ms);
 
-    load_pages(doc.clone(), max_page, page_loaded_sender, || drop(measure));
+    load_pages(doc.clone(), max_page, page_loaded_sender, move || {
+        drop(measure);
+    });
 
     dioxus_desktop::launch_with_props(
         App,
@@ -111,7 +112,7 @@ fn App(cx: Scope<AppProps>) -> Element {
         cx,
         (current_page, nb_loaded_pages),
         |(current_page, _nb_loaded_pages)| {
-            let doc = cx.props.doc.read().unwrap();
+            let doc = cx.props.doc.lock().unwrap();
             doc.content_for_page(*current_page.get())
         },
     );
@@ -156,7 +157,7 @@ fn App(cx: Scope<AppProps>) -> Element {
                     debug!("reading index {}", page);
                 }
             },
-            onkeydown: move |evt| {
+            onkeyup: move |evt| {
                 match evt.key() {
                     Key::ArrowLeft | Key::ArrowUp => {
                         let page = *current_page.get();

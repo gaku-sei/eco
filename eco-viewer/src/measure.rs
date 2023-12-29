@@ -17,6 +17,16 @@ pub struct Measure {
     precision: Precision,
 }
 
+impl Clone for Measure {
+    fn clone(&self) -> Self {
+        Self {
+            label: self.label.clone(),
+            start: self.start,
+            precision: self.precision,
+        }
+    }
+}
+
 impl Measure {
     #[allow(unused)]
     #[must_use]
@@ -30,6 +40,13 @@ impl Measure {
             precision,
         }
     }
+
+    #[must_use]
+    #[allow(unused)]
+    pub fn set_label(mut self, new_label: &str) -> Self {
+        self.label = new_label.to_string();
+        self
+    }
 }
 
 impl Drop for Measure {
@@ -39,9 +56,9 @@ impl Drop for Measure {
             .unwrap();
         let duration = end - self.start;
         match self.precision {
-            Precision::Ns => info!("{}: {}", self.label, duration.as_nanos()),
-            Precision::Ms => info!("{}: {}", self.label, duration.as_millis()),
-            Precision::S => info!("{}: {}", self.label, duration.as_secs()),
+            Precision::Ns => info!("{}: {}ns", self.label, duration.as_nanos()),
+            Precision::Ms => info!("{}: {}ms", self.label, duration.as_millis()),
+            Precision::S => info!("{}: {}s", self.label, duration.as_secs()),
         };
     }
 }

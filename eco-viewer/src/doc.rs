@@ -2,7 +2,7 @@ use std::{
     fs::File,
     io::BufReader,
     str::FromStr,
-    sync::{Arc, RwLock},
+    sync::{Arc, Mutex},
 };
 
 use base64::Engine;
@@ -160,9 +160,14 @@ where
 }
 
 #[allow(clippy::module_name_repetitions)]
-pub type SharedDoc = Arc<RwLock<Doc>>;
+pub type SharedDoc = Arc<Mutex<Doc>>;
 
 /// ## Errors
-pub fn try_load_shared_doc_from_path(type_: FileType, path: &Utf8Path) -> Result<SharedDoc> {
-    Ok(Arc::new(RwLock::new(Doc::try_load_from_path(type_, path)?)))
+pub fn try_load_shared_doc_from_path(
+    type_: FileType,
+    path: &Utf8Path,
+) -> Result<(usize, SharedDoc)> {
+    let doc = Doc::try_load_from_path(type_, path)?;
+
+    Ok((doc.max_page(), Arc::new(Mutex::new(doc))))
 }
