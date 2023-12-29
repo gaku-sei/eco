@@ -1,5 +1,4 @@
-#![deny(clippy::all)]
-#![deny(clippy::pedantic)]
+#![deny(clippy::all, clippy::pedantic)]
 
 use anyhow::{bail, Result};
 use camino::Utf8PathBuf;
@@ -27,9 +26,7 @@ fn main() -> Result<()> {
     else {
         bail!("unknown file type");
     };
-    if file_type == FileType::EPub {
-        bail!("unknown file type");
-    }
+
     eco_viewer::run(path, file_type)?;
 
     Ok(())

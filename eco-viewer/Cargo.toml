@@ -9,11 +9,14 @@ anyhow.workspace = true
 base64.workspace = true
 camino.workspace = true
 clap = { workspace = true, features = ["derive"] }
+dark-light.workspace = true
 dioxus.workspace = true
 dioxus-desktop.workspace = true
 dunce.workspace = true
 eco-cbz = { workspace = true, features = ["metadata"] }
 epub.workspace = true
+futures.workspace = true
+iced = { workspace = true, features = ["image"] }
 thiserror.workspace = true
 tl.workspace = true
 tracing.workspace = true
