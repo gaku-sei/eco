@@ -1436,12 +1436,27 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "56ce8c6da7551ec6c462cbaf3bfbc75131ebbfa1c944aeaa9dab51ca1c5f0c3b"
 
 [[package]]
+name = "eco"
+version = "0.1.0"
+dependencies = [
+ "camino",
+ "clap",
+ "eco-cbz",
+ "eco-convert",
+ "eco-merge",
+ "eco-pack",
+ "eco-view",
+ "thiserror",
+ "tracing",
+ "tracing-subscriber",
+]
+
+[[package]]
 name = "eco-cbz"
 version = "0.1.0"
 dependencies = [
  "camino",
  "chrono",
- "clap",
  "image",
  "sanitize-filename",
  "serde",
@@ -1453,12 +1468,10 @@ dependencies = [
 ]
 
 [[package]]
-name = "eco-converter"
+name = "eco-convert"
 version = "0.1.0"
 dependencies = [
- "anyhow",
  "camino",
- "clap",
  "eco-cbz",
  "eco-pack",
  "html5ever 0.26.0",
@@ -1466,31 +1479,27 @@ dependencies = [
  "markup5ever_rcdom",
  "mobi",
  "pdf",
+ "thiserror",
  "tl",
  "tracing",
- "tracing-subscriber",
 ]
 
 [[package]]
 name = "eco-merge"
 version = "0.1.0"
 dependencies = [
- "anyhow",
  "camino",
- "clap",
  "eco-cbz",
  "glob",
+ "thiserror",
  "tracing",
- "tracing-subscriber",
 ]
 
 [[package]]
 name = "eco-pack"
 version = "0.1.0"
 dependencies = [
- "anyhow",
  "camino",
- "clap",
  "eco-cbz",
  "glob",
  "thiserror",
@@ -1499,13 +1508,11 @@ dependencies = [
 ]
 
 [[package]]
-name = "eco-viewer"
+name = "eco-view"
 version = "0.1.0"
 dependencies = [
- "anyhow",
  "base64 0.21.5",
  "camino",
- "clap",
  "dark-light",
  "dioxus",
  "dioxus-desktop",
@@ -1517,7 +1524,6 @@ dependencies = [
  "thiserror",
  "tl",
  "tracing",
- "tracing-subscriber",
  "zip",
 ]
 

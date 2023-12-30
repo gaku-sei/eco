@@ -5,10 +5,8 @@ edition.workspace = true
 rust-version.workspace = true
 
 [dependencies]
-anyhow.workspace = true
 camino.workspace = true
-clap.workspace = true
 eco-cbz.workspace = true
 glob.workspace = true
+thiserror.workspace = true
 tracing.workspace = true
-tracing-subscriber.workspace = true

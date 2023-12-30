@@ -1,5 +1,4 @@
 use std::{
-    fmt::Display,
     io::{BufRead, Cursor, Read, Seek},
     path::Path,
 };
@@ -10,23 +9,9 @@ use zip::read::ZipFile;
 use crate::errors::{Error, Result};
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord)]
-#[cfg_attr(feature = "clap", derive(clap::ValueEnum))]
 pub enum ReadingOrder {
     Rtl,
     Ltr,
-}
-
-impl Display for ReadingOrder {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        write!(
-            f,
-            "{}",
-            match self {
-                Self::Ltr => "ltr",
-                Self::Rtl => "rtl",
-            }
-        )
-    }
 }
 
 #[derive(Debug, PartialEq)]
@@ -73,7 +58,9 @@ impl Image {
         })
     }
 
+    #[allow(clippy::missing_errors_doc)]
     pub fn try_from_zip_file(mut file: ZipFile<'_>) -> Result<Self> {
+        #[allow(clippy::cast_possible_truncation)]
         let mut buf = Vec::with_capacity(file.size() as usize);
         file.read_to_end(&mut buf)?;
 
@@ -153,6 +140,7 @@ impl Image {
         self
     }
 
+    #[allow(clippy::missing_errors_doc)]
     pub fn try_into_bytes(self) -> Result<Vec<u8>> {
         let mut buf = Cursor::new(Vec::new());
         self.dynamic_image

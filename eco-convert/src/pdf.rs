@@ -1,6 +1,5 @@
 use std::{io::Cursor, path::Path};
 
-use anyhow::Result;
 use eco_cbz::image::Image;
 use pdf::{
     enc::StreamFilter,
@@ -9,6 +8,9 @@ use pdf::{
 };
 use tracing::error;
 
+use crate::Result;
+
+#[allow(clippy::missing_errors_doc)]
 pub fn convert_to_imgs(path: impl AsRef<Path>) -> Result<Vec<Image>> {
     let pdf = PdfFileOptions::cached().open(path)?;
     // We may have actually less images than the count but never more,

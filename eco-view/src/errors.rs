@@ -4,7 +4,7 @@ pub enum Error {
     Io(#[from] std::io::Error),
 
     #[error("cbz error: {0}")]
-    Cbz(#[from] eco_cbz::errors::Error),
+    Cbz(#[from] eco_cbz::Error),
 
     #[error("epub doc error: {0}")]
     EpubDoc(#[from] epub::doc::DocError),
@@ -23,6 +23,12 @@ pub enum Error {
 
     #[error("page not found: {0}")]
     PageNotFound(usize),
+
+    #[error("invalid non utf8 path provided")]
+    InvalidNonUtf8Path,
+
+    #[error("unknown file type provided")]
+    UnknownFileType,
 }
 
 pub type Result<T, E = Error> = std::result::Result<T, E>;

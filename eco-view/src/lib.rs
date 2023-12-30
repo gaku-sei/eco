@@ -4,7 +4,7 @@
 
 use std::{cell::Cell, thread};
 
-use camino::Utf8Path;
+use camino::Utf8PathBuf;
 use dioxus::{
     html::{geometry::WheelDelta, input_data::keyboard_types::Key},
     prelude::*,
@@ -17,11 +17,11 @@ use tracing::{debug, error};
 use crate::components::doc_page::DocPage;
 pub use crate::doc::FileType;
 use crate::doc::SharedDoc;
-use crate::errors::Result;
+pub use crate::errors::{Error, Result};
 
 mod components;
 mod doc;
-mod errors;
+pub mod errors;
 mod measure;
 
 fn load_pages<F>(
@@ -49,6 +49,15 @@ fn load_pages<F>(
     });
 }
 
+#[derive(Debug)]
+pub struct ViewOptions {
+    /// The path to the e-book file to view
+    pub path: Utf8PathBuf,
+
+    /// Type of the file
+    pub type_: Option<FileType>,
+}
+
 /// Starts a new window with the viewer inside
 ///
 /// ## Errors
@@ -56,9 +65,19 @@ fn load_pages<F>(
 /// Fails on file read error
 ///
 /// ## Panics
-pub fn run(path: impl AsRef<Utf8Path>, type_: FileType) -> Result<()> {
+pub fn view(opts: ViewOptions) -> Result<()> {
+    let Ok(path) = Utf8PathBuf::try_from(dunce::canonicalize(opts.path)?) else {
+        return Err(Error::InvalidNonUtf8Path);
+    };
+    let Some(file_type) = opts
+        .type_
+        .or_else(|| path.extension().and_then(|ext| ext.parse().ok()))
+    else {
+        return Err(Error::UnknownFileType);
+    };
+
     let path = path.as_ref();
-    let (max_page, doc) = try_load_shared_doc_from_path(type_, path)?;
+    let (max_page, doc) = try_load_shared_doc_from_path(file_type, path)?;
     let (page_loaded_sender, page_loaded_receiver) = mpsc::unbounded::<()>();
     let measure =
         crate::measure::Measure::new("total document loading time", crate::measure::Precision::Ms);

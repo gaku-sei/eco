@@ -1,6 +1,6 @@
 [workspace]
 resolver = "2"
-members = ["eco-cbz", "eco-converter", "eco-merge", "eco-pack", "eco-viewer"]
+members = ["eco", "eco-cbz", "eco-convert", "eco-merge", "eco-pack", "eco-view"]
 
 [workspace.package]
 rust-version = "1.73.0"
@@ -21,7 +21,10 @@ dioxus = "0.4.0"
 dioxus-desktop = "0.4.0"
 dunce = "1.0.4"
 eco-cbz = { path = "./eco-cbz" }
+eco-convert = { path = "./eco-convert" }
+eco-merge = { path = "./eco-merge" }
 eco-pack = { path = "./eco-pack" }
+eco-view = { path = "./eco-view" }
 epub = "2.1.1"
 futures = "0.3.28"
 glob = "0.3.1"

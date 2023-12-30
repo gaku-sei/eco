@@ -1,14 +1,12 @@
 [package]
-name = "eco-viewer"
+name = "eco-view"
 version = "0.1.0"
 edition.workspace = true
 rust-version.workspace = true
 
 [dependencies]
-anyhow.workspace = true
 base64.workspace = true
 camino.workspace = true
-clap = { workspace = true, features = ["derive"] }
 dark-light.workspace = true
 dioxus.workspace = true
 dioxus-desktop.workspace = true
@@ -20,5 +18,4 @@ iced = { workspace = true, features = ["image"] }
 thiserror.workspace = true
 tl.workspace = true
 tracing.workspace = true
-tracing-subscriber.workspace = true
 zip.workspace = true
