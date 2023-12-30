@@ -1,5 +1,6 @@
 use std::{
-    io::{BufRead, Cursor, Read, Seek},
+    fs::File,
+    io::{BufRead, BufReader, Cursor, Read, Seek},
     path::Path,
 };
 
@@ -14,46 +15,103 @@ pub enum ReadingOrder {
     Ltr,
 }
 
-#[derive(Debug, PartialEq)]
-pub struct Image {
-    dynamic_image: DynamicImage,
-    format: Option<ImageFormat>,
+enum ImageInner<R: Read> {
+    Reader(Option<ImageReader<R>>),
+    DynamicImage(DynamicImage),
 }
 
-impl Image {
+impl<R> ImageInner<R>
+where
+    R: BufRead + Seek,
+{
+    fn decode(&mut self) {
+        if let Self::Reader(reader) = self {
+            let reader = reader.take().unwrap();
+            *self = Self::DynamicImage(reader.decode().unwrap());
+        }
+    }
+
+    fn dynamic_image(&self) -> Option<&DynamicImage> {
+        if let Self::DynamicImage(dynamic_image) = self {
+            Some(dynamic_image)
+        } else {
+            None
+        }
+    }
+}
+
+impl<R: Read> From<DynamicImage> for ImageInner<R> {
+    fn from(dynamic_image: DynamicImage) -> Self {
+        Self::DynamicImage(dynamic_image)
+    }
+}
+
+impl<R: Read> From<ImageReader<R>> for ImageInner<R> {
+    fn from(reader: ImageReader<R>) -> Self {
+        Self::Reader(Some(reader))
+    }
+}
+
+pub struct Image<R: Read> {
+    format: ImageFormat,
+    inner: ImageInner<R>,
+}
+
+#[allow(clippy::module_name_repetitions)]
+pub type ImageBuf = Image<Cursor<Vec<u8>>>;
+
+#[allow(clippy::module_name_repetitions)]
+pub type ImageBytes<'a> = Image<Cursor<&'a [u8]>>;
+
+#[allow(clippy::module_name_repetitions)]
+pub type ImageFile = Image<BufReader<File>>;
+
+impl Image<BufReader<File>> {
     /// ## Errors
     ///
     /// Fails if the image can't be open or decoded
     pub fn open(path: impl AsRef<Path>) -> Result<Self> {
-        let reader = ImageReader::open(&path)?;
-        let format = reader.format();
+        let reader = ImageReader::open(&path)?.with_guessed_format()?;
+        let Some(format) = reader.format() else {
+            return Err(Error::UnknownImageFormat);
+        };
+
         Ok(Self {
-            dynamic_image: reader.decode()?,
+            inner: reader.into(),
             format,
         })
     }
+}
 
+impl<'a> Image<Cursor<&'a [u8]>> {
     /// ## Errors
     ///
-    /// Fails if the image format can't be guessed or the image can't be decoded
-    pub fn try_from_reader(reader: impl BufRead + Seek) -> Result<Self> {
-        let reader = ImageReader::new(reader).with_guessed_format()?;
-        let format = reader.format();
+    /// Fails if the image format can't be guessed
+    pub fn try_from_bytes(bytes: &'a [u8]) -> Result<Self> {
+        let reader = ImageReader::new(Cursor::new(bytes)).with_guessed_format()?;
+        let Some(format) = reader.format() else {
+            return Err(Error::UnknownImageFormat);
+        };
+
         Ok(Self {
-            dynamic_image: reader.decode()?,
+            inner: reader.into(),
             format,
         })
     }
+}
 
+impl Image<Cursor<Vec<u8>>> {
     /// ## Errors
     ///
-    /// Fails if the image format can't be guessed or the image can't be decoded
-    pub fn try_from_bytes(bytes: &[u8]) -> Result<Self> {
-        let buf = Cursor::new(bytes);
-        let reader = ImageReader::new(buf).with_guessed_format()?;
-        let format = reader.format();
+    /// Fails if the image format can't be guessed
+    pub fn try_from_buf(buf: Vec<u8>) -> Result<Self> {
+        let reader = ImageReader::new(Cursor::new(buf)).with_guessed_format()?;
+        let Some(format) = reader.format() else {
+            return Err(Error::UnknownImageFormat);
+        };
+
         Ok(Self {
-            dynamic_image: reader.decode()?,
+            inner: reader.into(),
             format,
         })
     }
@@ -63,62 +121,72 @@ impl Image {
         #[allow(clippy::cast_possible_truncation)]
         let mut buf = Vec::with_capacity(file.size() as usize);
         file.read_to_end(&mut buf)?;
+        Self::try_from_buf(buf)
+    }
+}
 
-        Self::try_from_bytes(&buf)
+impl<R> Image<R>
+where
+    R: BufRead + Seek,
+{
+    /// ## Errors
+    ///
+    /// Fails if the image format can't be guessed
+    pub fn try_from_reader(reader: R) -> Result<Self> {
+        let reader = ImageReader::new(reader).with_guessed_format()?;
+        let Some(format) = reader.format() else {
+            return Err(Error::UnknownImageFormat);
+        };
+
+        Ok(Self {
+            inner: reader.into(),
+            format,
+        })
     }
 
-    fn from_dynamic_image(dynamic_image: DynamicImage, format: Option<ImageFormat>) -> Self {
+    fn from_dynamic_image(dynamic_image: DynamicImage, format: ImageFormat) -> Self {
         Self {
-            dynamic_image,
+            inner: dynamic_image.into(),
             format,
         }
     }
 
     #[must_use]
-    pub fn is_portrait(&self) -> bool {
-        self.dynamic_image.height() > self.dynamic_image.width()
+    pub fn is_portrait(&mut self) -> bool {
+        let image = self.image();
+        image.height() > image.width()
     }
 
     #[must_use]
-    pub fn is_landscape(&self) -> bool {
+    pub fn is_landscape(&mut self) -> bool {
         !self.is_portrait()
     }
 
     #[must_use]
-    pub fn set_contrast(self, contrast: f32) -> Self {
-        Self::from_dynamic_image(self.dynamic_image.adjust_contrast(contrast), self.format)
+    pub fn set_contrast(mut self, contrast: f32) -> Self {
+        Self::from_dynamic_image(self.image().adjust_contrast(contrast), self.format)
     }
 
     #[must_use]
-    pub fn set_brightness(self, brightness: i32) -> Self {
-        Self::from_dynamic_image(self.dynamic_image.brighten(brightness), self.format)
+    pub fn set_brightness(mut self, brightness: i32) -> Self {
+        Self::from_dynamic_image(self.image().brighten(brightness), self.format)
     }
 
     #[must_use]
-    pub fn set_blur(self, blur: f32) -> Self {
-        Self::from_dynamic_image(self.dynamic_image.blur(blur), self.format)
+    pub fn set_blur(mut self, blur: f32) -> Self {
+        Self::from_dynamic_image(self.image().blur(blur), self.format)
     }
 
     #[must_use]
-    pub fn autosplit(self, reading_order: ReadingOrder) -> (Image, Image) {
-        let img1 = Self::from_dynamic_image(
-            self.dynamic_image.crop_imm(
-                0,
-                0,
-                self.dynamic_image.width() / 2,
-                self.dynamic_image.height(),
-            ),
-            self.format,
-        );
-        let img2 = Self::from_dynamic_image(
-            self.dynamic_image.crop_imm(
-                self.dynamic_image.width() / 2,
-                0,
-                self.dynamic_image.width(),
-                self.dynamic_image.height(),
-            ),
-            self.format,
-        );
+    pub fn autosplit(mut self, reading_order: ReadingOrder) -> (Image<R>, Image<R>) {
+        let format = self.format;
+        let image = self.image();
+        let height = image.height();
+        let width = image.width();
+        let img_width = width / 2;
+
+        let img1 = Self::from_dynamic_image(image.crop_imm(0, 0, img_width, height), format);
+        let img2 = Self::from_dynamic_image(image.crop_imm(img_width, 0, width, height), format);
         match reading_order {
             ReadingOrder::Ltr => (img1, img2),
             ReadingOrder::Rtl => (img2, img1),
@@ -126,38 +194,54 @@ impl Image {
     }
 
     #[must_use]
-    pub fn dynamic(&self) -> &DynamicImage {
-        &self.dynamic_image
+    #[allow(clippy::missing_panics_doc)]
+    pub fn image(&mut self) -> &DynamicImage {
+        self.inner.decode();
+        self.inner.dynamic_image().unwrap()
     }
 
     #[must_use]
-    pub fn format(&self) -> Option<ImageFormat> {
+    pub fn format(&self) -> ImageFormat {
         self.format
     }
 
     pub fn set_format(&mut self, format: ImageFormat) -> &Self {
-        self.format = Some(format);
+        self.format = format;
         self
     }
 
     #[allow(clippy::missing_errors_doc)]
     pub fn try_into_bytes(self) -> Result<Vec<u8>> {
-        let mut buf = Cursor::new(Vec::new());
-        self.dynamic_image
-            .write_to(&mut buf, self.format.unwrap_or(ImageFormat::Png))?;
-        Ok(buf.into_inner())
+        match self.inner {
+            ImageInner::Reader(Some(reader)) => {
+                let mut buf = Vec::new();
+                reader.into_inner().read_to_end(&mut buf)?;
+                Ok(buf)
+            }
+            ImageInner::DynamicImage(dynamic_image) => {
+                let mut buf = Cursor::new(Vec::new());
+                let format = self.format;
+
+                dynamic_image.write_to(&mut buf, format)?;
+                Ok(buf.into_inner())
+            }
+            ImageInner::Reader(None) => unreachable!(),
+        }
     }
 }
 
-impl TryFrom<Image> for Vec<u8> {
+impl<R> TryFrom<Image<R>> for Vec<u8>
+where
+    R: BufRead + Seek,
+{
     type Error = Error;
 
-    fn try_from(image: Image) -> Result<Self> {
+    fn try_from(image: Image<R>) -> Result<Self> {
         image.try_into_bytes()
     }
 }
 
-impl<'a> TryFrom<ZipFile<'a>> for Image {
+impl<'a> TryFrom<ZipFile<'a>> for Image<Cursor<Vec<u8>>> {
     type Error = Error;
 
     fn try_from(file: ZipFile<'a>) -> Result<Self> {
@@ -165,18 +249,18 @@ impl<'a> TryFrom<ZipFile<'a>> for Image {
     }
 }
 
-impl TryFrom<&[u8]> for Image {
+impl TryFrom<Vec<u8>> for Image<Cursor<Vec<u8>>> {
     type Error = Error;
 
-    fn try_from(bytes: &[u8]) -> Result<Self> {
-        Self::try_from_bytes(bytes)
+    fn try_from(buf: Vec<u8>) -> Result<Self> {
+        Self::try_from_buf(buf)
     }
 }
 
-impl TryFrom<Vec<u8>> for Image {
+impl<'a> TryFrom<&'a [u8]> for Image<Cursor<&'a [u8]>> {
     type Error = Error;
 
-    fn try_from(bytes: Vec<u8>) -> Result<Self> {
-        Self::try_from_bytes(&bytes)
+    fn try_from(bytes: &'a [u8]) -> Result<Self> {
+        Self::try_from_bytes(bytes)
     }
 }

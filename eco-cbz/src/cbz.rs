@@ -1,6 +1,6 @@
 use std::{
     fs::{File, OpenOptions},
-    io::{Cursor, Read, Seek, Write},
+    io::{BufRead, Cursor, Read, Seek, Write},
     path::Path,
 };
 
@@ -9,7 +9,7 @@ use tracing::debug;
 use zip::{read::ZipFile, write::FileOptions, ZipArchive, ZipWriter};
 
 pub use crate::errors::{Error, Result};
-use crate::image::Image;
+use crate::image::{Image, ImageBuf};
 
 /// We artificially limit the amount of accepted files to 65535 files per Cbz
 /// First as it'd be rather impractical for the user to read such enormous Cbz
@@ -73,7 +73,7 @@ where
     ///
     /// Fails if file size is too large to fit a `usize` on host machine
     /// or if the content can't be read
-    pub fn read_by_name(&mut self, name: &str) -> Result<Image> {
+    pub fn read_by_name(&mut self, name: &str) -> Result<ImageBuf> {
         let file = self.archive.by_name(name)?;
         file.try_into()
     }
@@ -88,7 +88,7 @@ where
     /// Iterate over images present in the Cbz.
     pub fn for_each<F>(&mut self, mut f: F)
     where
-        F: FnMut(Result<Image>),
+        F: FnMut(Result<ImageBuf>),
     {
         for file_name in self.file_names() {
             f(self.read_by_name(&file_name));
@@ -103,7 +103,7 @@ where
     /// Returns an error immediately if the provided closure returns an error
     pub fn try_for_each<F, E>(&mut self, mut f: F) -> Result<(), E>
     where
-        F: FnMut(Result<Image>) -> Result<(), E>,
+        F: FnMut(Result<ImageBuf>) -> Result<(), E>,
     {
         for file_name in self.file_names() {
             f(self.read_by_name(&file_name))?;
@@ -238,18 +238,20 @@ where
     /// ## Errors
     ///
     /// Same behavior as `insert_with_extension_and_file_options`
-    pub fn insert(&mut self, image: Image) -> Result<()> {
-        let extension = image
-            .format()
-            .and_then(|f| f.extensions_str().first().copied())
-            .unwrap_or("png");
+    #[allow(clippy::missing_panics_doc)]
+    pub fn insert<R: BufRead + Seek>(&mut self, image: Image<R>) -> Result<()> {
+        let extension = image.format().extensions_str().first().unwrap();
         self.insert_with_extension_and_file_options(image, extension, FileOptions::default())
     }
 
     /// ## Errors
     ///
     /// Same behavior as `insert_with_extension_and_file_options`
-    pub fn insert_with_extension(&mut self, image: Image, extension: &str) -> Result<()> {
+    pub fn insert_with_extension<R: BufRead + Seek>(
+        &mut self,
+        image: Image<R>,
+        extension: &str,
+    ) -> Result<()> {
         self.insert_with_extension_and_file_options(image, extension, FileOptions::default())
     }
 
@@ -285,9 +287,9 @@ where
     /// ## Errors
     ///
     /// This fails if the Cbz writer can't be written or if it's full (i.e. its size equals `MAX_FILE_NUMBER`)
-    pub fn insert_with_extension_and_file_options(
+    pub fn insert_with_extension_and_file_options<R: BufRead + Seek>(
         &mut self,
-        image: Image,
+        image: Image<R>,
         extension: &str,
         file_options: FileOptions,
     ) -> Result<()> {

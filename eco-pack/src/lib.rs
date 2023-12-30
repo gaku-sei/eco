@@ -1,10 +1,14 @@
 #![deny(clippy::all, clippy::pedantic)]
 
-use std::{env, fs::create_dir_all, io::Cursor};
+use std::{
+    env,
+    fs::create_dir_all,
+    io::{BufRead, Cursor, Seek},
+};
 
 use camino::{Utf8Path, Utf8PathBuf};
 use eco_cbz::{
-    image::{Image, ReadingOrder},
+    image::{Image, ImageFile, ReadingOrder},
     CbzWriter,
 };
 use glob::glob;
@@ -17,7 +21,7 @@ pub mod errors;
 /// ## Errors
 ///
 /// Fails when the glob is invalid, the paths are not utf-8, or the image can't be read and decoded
-pub fn get_images_from_glob(glob_expr: impl AsRef<str>) -> Result<Vec<Image>> {
+pub fn get_images_from_glob(glob_expr: impl AsRef<str>) -> Result<Vec<ImageFile>> {
     let paths = glob(glob_expr.as_ref())?;
     let mut imgs = Vec::new();
 
@@ -34,8 +38,8 @@ pub fn get_images_from_glob(glob_expr: impl AsRef<str>) -> Result<Vec<Image>> {
 }
 
 #[allow(clippy::missing_errors_doc, clippy::missing_panics_doc)]
-pub fn pack_imgs_to_cbz(
-    imgs: Vec<Image>,
+pub fn pack_imgs_to_cbz<R: BufRead + Seek>(
+    imgs: Vec<Image<R>>,
     contrast: Option<f32>,
     brightness: Option<i32>,
     blur: Option<f32>,
@@ -53,8 +57,7 @@ pub fn pack_imgs_to_cbz(
         if let Some(blur) = blur {
             img = img.set_blur(blur);
         }
-
-        if img.is_landscape() && autosplit {
+        if autosplit && img.is_landscape() {
             debug!("splitting landscape file");
             let (img_left, img_right) = img.autosplit(reading_order);
             cbz_writer.insert(img_left)?;

@@ -35,6 +35,9 @@ pub enum Error {
     #[error("image error: {0}")]
     Image(#[from] image::ImageError),
 
+    #[error("unknown image format error")]
+    UnknownImageFormat,
+
     #[cfg(feature = "metadata")]
     #[error("metadata error: {0}")]
     MetadataFormat(#[from] serde_json::Error),
