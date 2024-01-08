@@ -15,6 +15,7 @@ camino = "1.1.4"
 clap = { version = "4.3.5", features = ["derive"] }
 cli-table = "0.4.7"
 chrono = "0.4.31"
+criterion = { version = "0.5.1", features = ["html_reports"] }
 dark-light = "1.0.0"
 dialoguer = "0.10.4"
 dioxus = "0.4.0"

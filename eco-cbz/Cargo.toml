@@ -16,6 +16,13 @@ thiserror.workspace = true
 tracing.workspace = true
 zip.workspace = true
 
+[dev-dependencies]
+criterion.workspace = true
+
 [features]
 default = []
 metadata = ["dep:chrono", "dep:serde", "dep:serde_json", "dep:serde_repr"]
+
+[[bench]]
+name = "image"
+harness = false

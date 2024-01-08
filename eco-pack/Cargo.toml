@@ -11,3 +11,4 @@ glob.workspace = true
 thiserror.workspace = true
 tracing.workspace = true
 tracing-subscriber.workspace = true
+zip.workspace = true

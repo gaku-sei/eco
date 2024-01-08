@@ -4,6 +4,7 @@ use camino::Utf8PathBuf;
 use eco_cbz::{CbzReader, CbzWriter};
 use glob::glob;
 use tracing::warn;
+use zip::{write::FileOptions, CompressionMethod};
 
 pub use crate::errors::{Error, Result};
 
@@ -19,11 +20,21 @@ pub struct MergeOptions {
 
     /// The merged archive name
     pub name: String,
+
+    /// If not provided the images are stored as is (fastest), value must be between 0-9
+    pub compression_level: Option<i32>,
 }
 
 #[allow(clippy::missing_errors_doc, clippy::needless_pass_by_value)]
 pub fn merge(opts: MergeOptions) -> Result<()> {
     let mut merged_cbz_writer = CbzWriter::default();
+
+    let mut file_options = FileOptions::default();
+    if let Some(compression_level) = opts.compression_level {
+        file_options = file_options.compression_level(Some(compression_level));
+    } else {
+        file_options = file_options.compression_method(CompressionMethod::Stored);
+    }
 
     for path in glob(&opts.archives_glob)? {
         let mut current_cbz = CbzReader::try_from_path(path?)?;
@@ -36,7 +47,7 @@ pub fn merge(opts: MergeOptions) -> Result<()> {
                     return Ok::<(), Error>(());
                 }
             };
-            merged_cbz_writer.insert(image)?;
+            merged_cbz_writer.insert_with_file_options(image, file_options)?;
 
             Ok::<(), Error>(())
         })?;

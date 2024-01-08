@@ -1,6 +1,4 @@
-use std::path::Path;
-
-use eco_cbz::image::Image;
+use eco_cbz::image::ImageBytes;
 use mobi::Mobi;
 use tl::{HTMLTag, ParserOptions, VDom};
 use tracing::{debug, error, warn};
@@ -10,8 +8,7 @@ use crate::{utils::base_32, Result};
 use super::MobiVersion;
 
 #[allow(clippy::missing_errors_doc)]
-pub fn convert_to_imgs(path: impl AsRef<Path>) -> Result<Vec<Image>> {
-    let mobi = Mobi::from_path(path)?;
+pub fn convert_to_imgs(mobi: &Mobi) -> Result<Vec<ImageBytes<'_>>> {
     // Or is it `gen_version`? Both were equal in all the files I tested.
     let version = MobiVersion::try_from(mobi.metadata.mobi.format_version)?;
     debug!("mobi version {version:#?}");

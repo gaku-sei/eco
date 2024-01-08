@@ -1,18 +1,19 @@
-use std::{io::Cursor, path::Path};
+use std::{io::Cursor, sync::Arc};
 
 use eco_cbz::image::Image;
 use pdf::{
     enc::StreamFilter,
-    file::FileOptions as PdfFileOptions,
+    file::{File as PdfFile, ObjectCache, StreamCache},
     object::{Resolve, XObject},
 };
 use tracing::error;
 
 use crate::Result;
 
-#[allow(clippy::missing_errors_doc)]
-pub fn convert_to_imgs(path: impl AsRef<Path>) -> Result<Vec<Image>> {
-    let pdf = PdfFileOptions::cached().open(path)?;
+#[allow(clippy::missing_errors_doc, clippy::type_complexity)]
+pub fn convert_to_imgs(
+    pdf: &PdfFile<Vec<u8>, ObjectCache, StreamCache>,
+) -> Result<Vec<Image<Cursor<Arc<[u8]>>>>> {
     // We may have actually less images than the count but never more,
     // at worse we request a slightly bigger capacity than necessary but at best we prevent any further allocations.
     let mut imgs = Vec::with_capacity(pdf.pages().count());
@@ -27,7 +28,7 @@ pub fn convert_to_imgs(path: impl AsRef<Path>) -> Result<Vec<Image>> {
                 }
             };
             if let XObject::Image(image) = &*resource {
-                let (image, filter) = match image.raw_image_data(&pdf) {
+                let (image, filter) = match image.raw_image_data(pdf) {
                     Ok(image_data) => image_data,
                     Err(err) => {
                         error!("failed to get image data: {err}");
@@ -35,7 +36,7 @@ pub fn convert_to_imgs(path: impl AsRef<Path>) -> Result<Vec<Image>> {
                     }
                 };
                 if let Some(StreamFilter::DCTDecode(_)) = filter {
-                    let img = match Image::try_from_reader(Cursor::new(&image)) {
+                    let img = match Image::try_from_reader(Cursor::new(image)) {
                         Ok(img) => img,
                         Err(err) => {
                             error!("image couldn't be read: {err}");

@@ -2,6 +2,8 @@
 
 use std::fs;
 
+use ::mobi::Mobi;
+use ::pdf::file::FileOptions as PdfFileOptions;
 use camino::Utf8PathBuf;
 use eco_cbz::image::ReadingOrder;
 use eco_pack::pack_imgs_to_cbz;
@@ -51,25 +53,44 @@ pub struct ConvertOptions {
 
     /// Reading order
     pub reading_order: ReadingOrder,
+
+    /// If not provided the images are stored as is (fastest), value must be between 0-9
+    pub compression_level: Option<i32>,
 }
 
 #[allow(clippy::missing_errors_doc)]
 pub fn convert(opts: ConvertOptions) -> Result<()> {
     fs::create_dir_all(&opts.outdir)?;
-    let imgs = match opts.from {
-        Format::Mobi | Format::Azw3 => mobi_to_imgs(opts.path)?,
-        Format::Pdf => pdf_to_imgs(opts.path)?,
+    let cbz_writer = match opts.from {
+        Format::Mobi | Format::Azw3 => {
+            let mobi = Mobi::from_path(opts.path)?;
+            let imgs = mobi_to_imgs(&mobi)?;
+            info!("found {} imgs", imgs.len());
+            pack_imgs_to_cbz(
+                imgs,
+                opts.contrast,
+                opts.brightness,
+                opts.blur,
+                opts.autosplit,
+                opts.reading_order,
+                opts.compression_level,
+            )?
+        }
+        Format::Pdf => {
+            let pdf = PdfFileOptions::cached().open(opts.path)?;
+            let imgs = pdf_to_imgs(&pdf)?;
+            info!("found {} imgs", imgs.len());
+            pack_imgs_to_cbz(
+                imgs,
+                opts.contrast,
+                opts.brightness,
+                opts.blur,
+                opts.autosplit,
+                opts.reading_order,
+                opts.compression_level,
+            )?
+        }
     };
-    info!("found {} imgs", imgs.len());
-
-    let cbz_writer = pack_imgs_to_cbz(
-        imgs,
-        opts.contrast,
-        opts.brightness,
-        opts.blur,
-        opts.autosplit,
-        opts.reading_order,
-    )?;
 
     cbz_writer.write_to_path(opts.outdir.join(format!("{}.cbz", opts.name)))?;
 
