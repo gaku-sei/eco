@@ -53,6 +53,9 @@ pub struct ConvertOptions {
 
     /// Reading order
     pub reading_order: ReadingOrder,
+
+    /// If not provided the images are stored as is (fastest), value must be between 0-9
+    pub compression_level: Option<i32>,
 }
 
 #[allow(clippy::missing_errors_doc)]
@@ -70,6 +73,7 @@ pub fn convert(opts: ConvertOptions) -> Result<()> {
                 opts.blur,
                 opts.autosplit,
                 opts.reading_order,
+                opts.compression_level,
             )?
         }
         Format::Pdf => {
@@ -83,6 +87,7 @@ pub fn convert(opts: ConvertOptions) -> Result<()> {
                 opts.blur,
                 opts.autosplit,
                 opts.reading_order,
+                opts.compression_level,
             )?
         }
     };

@@ -247,6 +247,19 @@ where
     /// ## Errors
     ///
     /// Same behavior as `insert_with_extension_and_file_options`
+    #[allow(clippy::missing_panics_doc)]
+    pub fn insert_with_file_options<R: BufRead + Seek>(
+        &mut self,
+        image: Image<R>,
+        file_options: FileOptions,
+    ) -> Result<()> {
+        let extension = image.format().extensions_str().first().unwrap();
+        self.insert_with_extension_and_file_options(image, extension, file_options)
+    }
+
+    /// ## Errors
+    ///
+    /// Same behavior as `insert_with_extension_and_file_options`
     pub fn insert_with_extension<R: BufRead + Seek>(
         &mut self,
         image: Image<R>,
