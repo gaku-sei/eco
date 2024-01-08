@@ -1569,6 +1569,7 @@ dependencies = [
  "glob",
  "thiserror",
  "tracing",
+ "zip",
 ]
 
 [[package]]
@@ -1581,6 +1582,7 @@ dependencies = [
  "thiserror",
  "tracing",
  "tracing-subscriber",
+ "zip",
 ]
 
 [[package]]

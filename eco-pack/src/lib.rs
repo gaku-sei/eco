@@ -13,6 +13,7 @@ use eco_cbz::{
 };
 use glob::glob;
 use tracing::{debug, error};
+use zip::{write::FileOptions, CompressionMethod};
 
 pub use crate::errors::{Error, Result};
 
@@ -45,8 +46,17 @@ pub fn pack_imgs_to_cbz<R: BufRead + Seek>(
     blur: Option<f32>,
     autosplit: bool,
     reading_order: ReadingOrder,
+    compression_level: Option<i32>,
 ) -> Result<CbzWriter<Cursor<Vec<u8>>>> {
     let mut cbz_writer = CbzWriter::default();
+
+    let mut file_options = FileOptions::default();
+    if let Some(compression_level) = compression_level {
+        file_options = file_options.compression_level(Some(compression_level));
+    } else {
+        file_options = file_options.compression_method(CompressionMethod::Stored);
+    }
+
     for mut img in imgs {
         if let Some(contrast) = contrast {
             img = img.set_contrast(contrast);
@@ -60,10 +70,10 @@ pub fn pack_imgs_to_cbz<R: BufRead + Seek>(
         if autosplit && img.is_landscape() {
             debug!("splitting landscape file");
             let (img_left, img_right) = img.autosplit(reading_order);
-            cbz_writer.insert(img_left)?;
-            cbz_writer.insert(img_right)?;
+            cbz_writer.insert_with_file_options(img_left, file_options)?;
+            cbz_writer.insert_with_file_options(img_right, file_options)?;
         } else {
-            cbz_writer.insert(img)?;
+            cbz_writer.insert_with_file_options(img, file_options)?;
         }
     }
 
@@ -95,6 +105,9 @@ pub struct PackOptions {
 
     /// Reading order
     pub reading_order: ReadingOrder,
+
+    /// If not provided the images are stored as is (fastest), value must be between 0-9
+    pub compression_level: Option<i32>,
 }
 
 #[allow(clippy::missing_errors_doc)]
@@ -117,6 +130,7 @@ pub fn pack(opts: PackOptions) -> Result<()> {
         opts.blur,
         opts.autosplit,
         opts.reading_order,
+        opts.compression_level,
     )?;
 
     cbz_writer.write_to_path(outdir.join(format!("{}.cbz", opts.name)))?;

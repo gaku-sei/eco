@@ -62,6 +62,10 @@ enum Command {
         /// Reading order
         #[clap(long, default_value_t = ReadingOrder::Rtl)]
         reading_order: ReadingOrder,
+
+        /// If not provided the images are stored as is (fastest), value must be between 0-9
+        #[clap(long)]
+        compression_level: Option<i32>,
     },
     Merge {
         /// A glob that matches all the archive to merge
@@ -75,6 +79,10 @@ enum Command {
         /// The merged archive name
         #[clap(short, long)]
         name: String,
+
+        /// If not provided the images are stored as is (fastest), value must be between 0-9
+        #[clap(long)]
+        compression_level: Option<i32>,
     },
     Pack {
         /// A glob that matches all the files to pack
@@ -107,6 +115,10 @@ enum Command {
         /// Reading order
         #[clap(long, default_value_t = ReadingOrder::Rtl)]
         reading_order: ReadingOrder,
+
+        /// If not provided the images are stored as is (fastest), value must be between 0-9
+        #[clap(long)]
+        compression_level: Option<i32>,
     },
     View {
         /// The path to the e-book file to view
@@ -133,6 +145,7 @@ fn main() -> Result<()> {
             blur,
             autosplit,
             reading_order,
+            compression_level,
         } => eco_convert::convert(eco_convert::ConvertOptions {
             path,
             from: from.into(),
@@ -143,15 +156,18 @@ fn main() -> Result<()> {
             blur,
             autosplit,
             reading_order: reading_order.into(),
+            compression_level,
         })?,
         Command::Merge {
             archives_glob,
             outdir,
             name,
+            compression_level,
         } => eco_merge::merge(eco_merge::MergeOptions {
             archives_glob,
             outdir,
             name,
+            compression_level,
         })?,
         Command::Pack {
             files_descriptor,
@@ -162,6 +178,7 @@ fn main() -> Result<()> {
             blur,
             autosplit,
             reading_order,
+            compression_level,
         } => eco_pack::pack(eco_pack::PackOptions {
             files_descriptor,
             outdir,
@@ -171,6 +188,7 @@ fn main() -> Result<()> {
             blur,
             autosplit,
             reading_order: reading_order.into(),
+            compression_level,
         })?,
         Command::View { path, type_ } => eco_view::view(eco_view::ViewOptions {
             path,

@@ -10,7 +10,6 @@ pub enum Precision {
     S,
 }
 
-#[allow(unused)]
 pub struct Measure {
     label: String,
     start: std::time::Duration,
@@ -28,7 +27,6 @@ impl Clone for Measure {
 }
 
 impl Measure {
-    #[allow(unused)]
     #[must_use]
     /// ## Panics
     pub fn new(label: &str, precision: Precision) -> Self {

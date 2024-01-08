@@ -238,10 +238,29 @@ where
     /// ## Errors
     ///
     /// Same behavior as `insert_with_extension_and_file_options`
-    #[allow(clippy::missing_panics_doc)]
     pub fn insert<R: BufRead + Seek>(&mut self, image: Image<R>) -> Result<()> {
-        let extension = image.format().extensions_str().first().unwrap();
+        let extension = image
+            .format()
+            .extensions_str()
+            .first()
+            .ok_or(Error::UnknownImageExtension)?;
         self.insert_with_extension_and_file_options(image, extension, FileOptions::default())
+    }
+
+    /// ## Errors
+    ///
+    /// Same behavior as `insert_with_extension_and_file_options`
+    pub fn insert_with_file_options<R: BufRead + Seek>(
+        &mut self,
+        image: Image<R>,
+        file_options: FileOptions,
+    ) -> Result<()> {
+        let extension = image
+            .format()
+            .extensions_str()
+            .first()
+            .ok_or(Error::UnknownImageExtension)?;
+        self.insert_with_extension_and_file_options(image, extension, file_options)
     }
 
     /// ## Errors
@@ -354,6 +373,7 @@ impl Writer<Cursor<Vec<u8>>> {
         let mut file = OpenOptions::new()
             .read(true)
             .write(true)
+            .truncate(true)
             .create(true)
             .open(
                 path.with_file_name(
