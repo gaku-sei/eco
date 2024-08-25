@@ -117,7 +117,7 @@ pub struct AppProps {
     page_loaded_receiver: Cell<Option<mpsc::UnboundedReceiver<()>>>,
 }
 
-#[allow(clippy::ignored_unit_patterns, clippy::too_many_lines)]
+#[allow(clippy::too_many_lines)]
 fn App(cx: Scope<AppProps>) -> Element {
     let page_loaded_receiver = cx.props.page_loaded_receiver.replace(None);
     // Forces reactivity on page loaded

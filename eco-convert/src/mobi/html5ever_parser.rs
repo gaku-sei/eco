@@ -1,6 +1,6 @@
-use std::{fs, io::BufReader, path::Path};
+use std::{fs, io::BufReader};
 
-use eco_cbz::image::Image;
+use eco_cbz::image::ImageBytes;
 use html5ever::{parse_document, tendril::TendrilSink, ParseOpts};
 use markup5ever_rcdom::{Node, NodeData, RcDom};
 use mobi::Mobi;
@@ -11,11 +11,10 @@ use crate::{utils::base_32, Result};
 use super::MobiVersion;
 
 #[allow(clippy::missing_errors_doc)]
-pub fn convert_to_imgs(path: impl AsRef<Path>) -> Result<Vec<Image>> {
-    let mobi = Mobi::from_path(path)?;
+pub fn convert_to_imgs(mobi: &Mobi) -> Result<Vec<ImageBytes<'_>>> {
     // Or is it `gen_version`? Both were equal in all the files I tested.
     let version = MobiVersion::try_from(mobi.metadata.mobi.format_version)?;
-    let dom = get_dom(&mobi)?;
+    let dom = get_dom(mobi)?;
     let imgs = mobi.image_records();
     let mut all_imgs = Vec::with_capacity(imgs.len());
     visit_node(version, &dom.document, |fid| {
@@ -31,8 +30,8 @@ pub fn convert_to_imgs(path: impl AsRef<Path>) -> Result<Vec<Image>> {
     Ok(all_imgs)
 }
 
-fn get_dom(m: &Mobi) -> Result<RcDom> {
-    let html = m.content_as_string_lossy();
+fn get_dom(mobi: &Mobi) -> Result<RcDom> {
+    let html = mobi.content_as_string_lossy();
     fs::write("index.html", html.as_bytes())?;
     let mut buf = BufReader::new(html.as_bytes());
     let dom = parse_document(RcDom::default(), ParseOpts::default())
