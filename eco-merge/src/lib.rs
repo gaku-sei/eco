@@ -22,14 +22,14 @@ pub struct MergeOptions {
     pub name: String,
 
     /// If not provided the images are stored as is (fastest), value must be between 0-9
-    pub compression_level: Option<i32>,
+    pub compression_level: Option<i64>,
 }
 
 #[allow(clippy::missing_errors_doc, clippy::needless_pass_by_value)]
 pub fn merge(opts: MergeOptions) -> Result<()> {
     let mut merged_cbz_writer = CbzWriter::default();
 
-    let mut file_options = FileOptions::default();
+    let mut file_options = FileOptions::<()>::default();
     if let Some(compression_level) = opts.compression_level {
         file_options = file_options.compression_level(Some(compression_level));
     } else {

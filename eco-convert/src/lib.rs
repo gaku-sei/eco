@@ -55,7 +55,7 @@ pub struct ConvertOptions {
     pub reading_order: ReadingOrder,
 
     /// If not provided the images are stored as is (fastest), value must be between 0-9
-    pub compression_level: Option<i32>,
+    pub compression_level: Option<i64>,
 }
 
 #[allow(clippy::missing_errors_doc)]

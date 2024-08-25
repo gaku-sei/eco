@@ -46,11 +46,11 @@ pub fn pack_imgs_to_cbz<R: BufRead + Seek>(
     blur: Option<f32>,
     autosplit: bool,
     reading_order: ReadingOrder,
-    compression_level: Option<i32>,
+    compression_level: Option<i64>,
 ) -> Result<CbzWriter<Cursor<Vec<u8>>>> {
     let mut cbz_writer = CbzWriter::default();
 
-    let mut file_options = FileOptions::default();
+    let mut file_options = FileOptions::<()>::default();
     if let Some(compression_level) = compression_level {
         file_options = file_options.compression_level(Some(compression_level));
     } else {
@@ -107,7 +107,7 @@ pub struct PackOptions {
     pub reading_order: ReadingOrder,
 
     /// If not provided the images are stored as is (fastest), value must be between 0-9
-    pub compression_level: Option<i32>,
+    pub compression_level: Option<i64>,
 }
 
 #[allow(clippy::missing_errors_doc)]

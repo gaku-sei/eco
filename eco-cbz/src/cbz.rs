@@ -7,7 +7,11 @@ use std::{
 use camino::Utf8Path;
 use image::ImageFormat;
 use tracing::debug;
-use zip::{read::ZipFile, write::FileOptions, ZipArchive, ZipWriter};
+use zip::{
+    read::ZipFile,
+    write::{FileOptionExtension, FileOptions},
+    ZipArchive, ZipWriter,
+};
 
 pub use crate::errors::{Error, Result};
 use crate::image::{Image, ImageBuf};
@@ -245,16 +249,16 @@ where
             .extensions_str()
             .first()
             .ok_or(Error::UnknownImageFormatExtensions)?;
-        self.insert_with_extension_and_file_options(image, extension, FileOptions::default())
+        self.insert_with_extension_and_file_options(image, extension, FileOptions::<()>::default())
     }
 
     /// ## Errors
     ///
     /// Same behavior as `insert_with_extension_and_file_options`
-    pub fn insert_with_file_options<R: BufRead + Seek>(
+    pub fn insert_with_file_options<R: BufRead + Seek, Ext: FileOptionExtension>(
         &mut self,
         image: Image<R>,
-        file_options: FileOptions,
+        file_options: FileOptions<'_, Ext>,
     ) -> Result<()> {
         let extension = image
             .format()
@@ -272,7 +276,7 @@ where
         image: Image<R>,
         extension: &str,
     ) -> Result<()> {
-        self.insert_with_extension_and_file_options(image, extension, FileOptions::default())
+        self.insert_with_extension_and_file_options(image, extension, FileOptions::<()>::default())
     }
 
     /// ## Errors
@@ -298,11 +302,11 @@ where
     /// ## Errors
     ///
     /// Same behavior as `insert_with_extension_and_file_options`
-    pub fn insert_bytes_with_extension_and_file_options(
+    pub fn insert_bytes_with_extension_and_file_options<Ext: FileOptionExtension>(
         &mut self,
         bytes: &[u8],
         extension: &str,
-        file_options: FileOptions,
+        file_options: FileOptions<'_, Ext>,
     ) -> Result<()> {
         let image = Image::bytes_with_format(
             bytes,
@@ -315,11 +319,11 @@ where
     /// ## Errors
     ///
     /// This fails if the Cbz writer can't be written or if it's full (i.e. its size equals `MAX_FILE_NUMBER`)
-    pub fn insert_with_extension_and_file_options<R: BufRead + Seek>(
+    pub fn insert_with_extension_and_file_options<R: BufRead + Seek, Ext: FileOptionExtension>(
         &mut self,
         image: Image<R>,
         extension: &str,
-        file_options: FileOptions,
+        file_options: FileOptions<'_, Ext>,
     ) -> Result<()> {
         if self.size >= MAX_FILE_NUMBER {
             return Err(Error::CbzTooLarge(MAX_FILE_NUMBER));
@@ -365,7 +369,7 @@ impl Writer<Cursor<Vec<u8>>> {
     /// ## Errors
     ///
     /// Same errors as the underlying `ZipWriter::finish` method
-    pub fn write_to(mut self, mut writer: impl Write) -> Result<()> {
+    pub fn write_to(self, mut writer: impl Write) -> Result<()> {
         writer.write_all(&self.archive.finish()?.into_inner())?;
 
         Ok(())

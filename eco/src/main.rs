@@ -66,7 +66,7 @@ enum Command {
 
         /// If not provided the images are stored as is (fastest), value must be between 0-9
         #[clap(long)]
-        compression_level: Option<i32>,
+        compression_level: Option<i64>,
     },
     Merge {
         /// A glob that matches all the archive to merge
@@ -83,7 +83,7 @@ enum Command {
 
         /// If not provided the images are stored as is (fastest), value must be between 0-9
         #[clap(long)]
-        compression_level: Option<i32>,
+        compression_level: Option<i64>,
     },
     Pack {
         /// A glob that matches all the files to pack
@@ -119,7 +119,7 @@ enum Command {
 
         /// If not provided the images are stored as is (fastest), value must be between 0-9
         #[clap(long)]
-        compression_level: Option<i32>,
+        compression_level: Option<i64>,
     },
     View {
         /// The path to the e-book file to view
