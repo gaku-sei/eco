@@ -98,6 +98,17 @@ impl<'a> Image<Cursor<&'a [u8]>> {
             format,
         })
     }
+
+    #[must_use]
+    pub fn bytes_with_format(bytes: &'a [u8], format: ImageFormat) -> Self {
+        let mut reader = ImageReader::new(Cursor::new(bytes));
+        reader.set_format(format);
+
+        Self {
+            inner: reader.into(),
+            format,
+        }
+    }
 }
 
 impl Image<Cursor<Vec<u8>>> {
@@ -114,6 +125,17 @@ impl Image<Cursor<Vec<u8>>> {
             inner: reader.into(),
             format,
         })
+    }
+
+    #[must_use]
+    pub fn buf_with_format(buf: Vec<u8>, format: ImageFormat) -> Self {
+        let mut reader = ImageReader::new(Cursor::new(buf));
+        reader.set_format(format);
+
+        Self {
+            inner: reader.into(),
+            format,
+        }
     }
 
     #[allow(clippy::missing_errors_doc)]

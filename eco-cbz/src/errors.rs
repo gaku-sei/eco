@@ -38,8 +38,11 @@ pub enum Error {
     #[error("unknown image format error")]
     UnknownImageFormat,
 
-    #[error("unknown image extension error")]
-    UnknownImageExtension,
+    #[error("unknown image format extension error")]
+    UnknownImageFormatExtensions,
+
+    #[error("unknown image extension error: {0}")]
+    InvalidImageExtension(String),
 
     #[cfg(feature = "metadata")]
     #[error("metadata error: {0}")]

@@ -5,6 +5,7 @@ use std::{
 };
 
 use camino::Utf8Path;
+use image::ImageFormat;
 use tracing::debug;
 use zip::{read::ZipFile, write::FileOptions, ZipArchive, ZipWriter};
 
@@ -243,7 +244,7 @@ where
             .format()
             .extensions_str()
             .first()
-            .ok_or(Error::UnknownImageExtension)?;
+            .ok_or(Error::UnknownImageFormatExtensions)?;
         self.insert_with_extension_and_file_options(image, extension, FileOptions::default())
     }
 
@@ -259,7 +260,7 @@ where
             .format()
             .extensions_str()
             .first()
-            .ok_or(Error::UnknownImageExtension)?;
+            .ok_or(Error::UnknownImageFormatExtensions)?;
         self.insert_with_extension_and_file_options(image, extension, file_options)
     }
 
@@ -286,7 +287,11 @@ where
     ///
     /// Same behavior as `insert_with_extension_and_file_options`
     pub fn insert_bytes_with_extension(&mut self, bytes: &[u8], extension: &str) -> Result<()> {
-        let image = bytes.try_into()?;
+        let image = Image::bytes_with_format(
+            bytes,
+            ImageFormat::from_extension(extension)
+                .ok_or_else(|| Error::InvalidImageExtension(extension.to_string()))?,
+        );
         self.insert_with_extension(image, extension)
     }
 
@@ -299,7 +304,11 @@ where
         extension: &str,
         file_options: FileOptions,
     ) -> Result<()> {
-        let image = bytes.try_into()?;
+        let image = Image::bytes_with_format(
+            bytes,
+            ImageFormat::from_extension(extension)
+                .ok_or_else(|| Error::InvalidImageExtension(extension.to_string()))?,
+        );
         self.insert_with_extension_and_file_options(image, extension, file_options)
     }
 
