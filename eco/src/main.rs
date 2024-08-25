@@ -22,6 +22,7 @@ struct Args {
 
 #[derive(Debug, clap::Args)]
 struct GlobalOpts {
+    #[clap(long, action)]
     verbose: bool,
 }
 
