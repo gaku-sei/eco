@@ -4,7 +4,7 @@ use std::{
     path::Path,
 };
 
-use image::{io::Reader as ImageReader, DynamicImage, ImageFormat};
+use image::{DynamicImage, ImageFormat, ImageReader};
 use zip::read::ZipFile;
 
 use crate::errors::{Error, Result};
@@ -15,7 +15,7 @@ pub enum ReadingOrder {
     Ltr,
 }
 
-enum ImageInner<R: Read> {
+enum ImageInner<R: Read + Seek> {
     Reader(Option<ImageReader<R>>),
     DynamicImage(DynamicImage),
 }
@@ -40,19 +40,19 @@ where
     }
 }
 
-impl<R: Read> From<DynamicImage> for ImageInner<R> {
+impl<R: Read + Seek> From<DynamicImage> for ImageInner<R> {
     fn from(dynamic_image: DynamicImage) -> Self {
         Self::DynamicImage(dynamic_image)
     }
 }
 
-impl<R: Read> From<ImageReader<R>> for ImageInner<R> {
+impl<R: Read + Seek> From<ImageReader<R>> for ImageInner<R> {
     fn from(reader: ImageReader<R>) -> Self {
         Self::Reader(Some(reader))
     }
 }
 
-pub struct Image<R: Read> {
+pub struct Image<R: Read + Seek> {
     format: ImageFormat,
     inner: ImageInner<R>,
 }

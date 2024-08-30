@@ -7,7 +7,7 @@ rust-version.workspace = true
 [dependencies]
 camino.workspace = true
 chrono = { workspace = true, features = ["serde"], optional = true }
-image = { workspace = true, features = ["webp-encoder"] }
+image.workspace = true
 sanitize-filename.workspace = true
 serde = { workspace = true, features = ["derive"], optional = true }
 serde_json = { workspace = true, optional = true }
