@@ -60,7 +60,7 @@ impl From<FileType> for eco_view::FileType {
     fn from(value: FileType) -> Self {
         match value {
             FileType::Cbz => Self::Cbz,
-            FileType::EPub => Self::EPub,
+            FileType::EPub => Self::Epub,
         }
     }
 }

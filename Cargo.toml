@@ -18,8 +18,7 @@ chrono = "0.4.38"
 criterion = { version = "0.5.1", features = ["html_reports"] }
 dark-light = "1.1.1"
 dialoguer = "0.11.0"
-dioxus = "0.4.0"
-dioxus-desktop = "0.4.0"
+dioxus = { version = "^0.5.6", features = ["desktop"] }
 dunce = "1.0.5"
 eco-cbz = { path = "./eco-cbz" }
 eco-convert = { path = "./eco-convert" }

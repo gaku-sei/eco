@@ -16,7 +16,7 @@ use crate::errors::{Error, Result};
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum FileType {
     Cbz,
-    EPub,
+    Epub,
 }
 
 impl FromStr for FileType {
@@ -25,7 +25,7 @@ impl FromStr for FileType {
     fn from_str(s: &str) -> Result<Self> {
         match s.to_lowercase().as_str() {
             "cbz" => Ok(FileType::Cbz),
-            "epub" => Ok(FileType::EPub),
+            "epub" => Ok(FileType::Epub),
             _ => Err(Error::InvalidFileType(s.to_string())),
         }
     }
@@ -60,7 +60,7 @@ impl Doc {
                     pages: Vec::with_capacity(max_page),
                 })
             }
-            FileType::EPub => {
+            FileType::Epub => {
                 let doc = epub::doc::EpubDoc::new(path)?;
                 let max_page = doc.get_num_pages();
                 Ok(Doc::Epub {
