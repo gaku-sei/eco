@@ -12,7 +12,7 @@ use dioxus::desktop::{Config, WindowBuilder};
 use dioxus::html::{geometry::WheelDelta, input_data::keyboard_types::Key};
 use dioxus::prelude::*;
 use doc::try_load_shared_doc_from_path;
-use futures::{channel::mpsc, executor::block_on, SinkExt, StreamExt};
+use futures::{SinkExt, StreamExt, channel::mpsc, executor::block_on};
 use tracing::{debug, error};
 
 use crate::components::doc_page::DocPage;

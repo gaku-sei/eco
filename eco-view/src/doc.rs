@@ -39,7 +39,7 @@ pub enum Doc {
         pages: Vec<String>,
     },
     Epub {
-        doc: epub::doc::EpubDoc<BufReader<File>>,
+        doc: Box<epub::doc::EpubDoc<BufReader<File>>>,
         max_page: usize,
         pages: Vec<String>,
     },
@@ -64,7 +64,7 @@ impl Doc {
                 let doc = epub::doc::EpubDoc::new(path)?;
                 let max_page = doc.get_num_pages();
                 Ok(Doc::Epub {
-                    doc,
+                    doc: Box::new(doc),
                     max_page,
                     pages: Vec::with_capacity(max_page),
                 })

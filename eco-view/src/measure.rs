@@ -57,6 +57,6 @@ impl Drop for Measure {
             Precision::Ns => info!("{}: {}ns", self.label, duration.as_nanos()),
             Precision::Ms => info!("{}: {}ms", self.label, duration.as_millis()),
             Precision::S => info!("{}: {}s", self.label, duration.as_secs()),
-        };
+        }
     }
 }

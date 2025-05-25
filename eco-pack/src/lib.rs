@@ -8,12 +8,12 @@ use std::{
 
 use camino::{Utf8Path, Utf8PathBuf};
 use eco_cbz::{
-    image::{Image, ImageFile, ReadingOrder},
     CbzWriter,
+    image::{Image, ImageFile, ReadingOrder},
 };
 use glob::glob;
 use tracing::{debug, error};
-use zip::{write::FileOptions, CompressionMethod};
+use zip::{CompressionMethod, write::FileOptions};
 
 pub use crate::errors::{Error, Result};
 

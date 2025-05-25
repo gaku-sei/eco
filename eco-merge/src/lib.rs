@@ -4,7 +4,7 @@ use camino::Utf8PathBuf;
 use eco_cbz::{CbzReader, CbzWriter};
 use glob::glob;
 use tracing::warn;
-use zip::{write::FileOptions, CompressionMethod};
+use zip::{CompressionMethod, write::FileOptions};
 
 pub use crate::errors::{Error, Result};
 

@@ -19,11 +19,7 @@ pub enum Primary {
 
 impl From<bool> for Primary {
     fn from(primary: bool) -> Self {
-        if primary {
-            Self::Yes
-        } else {
-            Self::No
-        }
+        if primary { Self::Yes } else { Self::No }
     }
 }
 

@@ -1,4 +1,8 @@
 #![deny(clippy::all, clippy::pedantic)]
+#![cfg_attr(
+    all(not(debug_assertions), target_os = "windows"),
+    windows_subsystem = "windows"
+)]
 
 use camino::Utf8PathBuf;
 use clap::{Parser, Subcommand};
@@ -132,7 +136,9 @@ enum Command {
 }
 
 fn main() -> Result<()> {
-    tracing_subscriber::fmt::init();
+    if cfg!(debug_assertions) {
+        tracing_subscriber::fmt::init();
+    } // TODO: else use tracing appender to log into file
     let args = Args::parse();
 
     match args.command {

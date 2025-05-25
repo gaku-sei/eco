@@ -3,7 +3,7 @@ use mobi::Mobi;
 use tl::{HTMLTag, ParserOptions, VDom};
 use tracing::{debug, error, warn};
 
-use crate::{utils::base_32, Result};
+use crate::{Result, utils::base_32};
 
 use super::MobiVersion;
 
@@ -22,7 +22,7 @@ pub fn convert_to_imgs(mobi: &Mobi) -> Result<Vec<ImageBytes<'_>>> {
             match img.content.try_into() {
                 Ok(img) => all_imgs.push(img),
                 Err(err) => error!("failed to decode image: {err}"),
-            };
+            }
         } else {
             warn!("unknown fid {fid}");
         }

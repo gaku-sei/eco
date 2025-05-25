@@ -8,9 +8,9 @@ use camino::Utf8Path;
 use image::ImageFormat;
 use tracing::debug;
 use zip::{
+    ZipArchive, ZipWriter,
     read::ZipFile,
     write::{FileOptionExtension, FileOptions},
-    ZipArchive, ZipWriter,
 };
 
 pub use crate::errors::{Error, Result};
@@ -86,7 +86,7 @@ where
     /// ## Errors
     ///
     /// Fails if the content can't be read
-    pub fn raw_read_by_name(&mut self, name: &str) -> Result<ZipFile<'_>> {
+    pub fn raw_read_by_name(&mut self, name: &str) -> Result<ZipFile<'_, R>> {
         Ok(self.archive.by_name(name)?)
     }
 
