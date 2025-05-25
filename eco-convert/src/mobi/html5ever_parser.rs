@@ -1,12 +1,12 @@
 use std::{fs, io::BufReader};
 
 use eco_cbz::image::ImageBytes;
-use html5ever::{parse_document, tendril::TendrilSink, ParseOpts};
+use html5ever::{ParseOpts, parse_document, tendril::TendrilSink};
 use markup5ever_rcdom::{Node, NodeData, RcDom};
 use mobi::Mobi;
 use tracing::{error, warn};
 
-use crate::{utils::base_32, Result};
+use crate::{Result, utils::base_32};
 
 use super::MobiVersion;
 
@@ -22,7 +22,7 @@ pub fn convert_to_imgs(mobi: &Mobi) -> Result<Vec<ImageBytes<'_>>> {
             match img.content.try_into() {
                 Ok(img) => all_imgs.push(img),
                 Err(err) => error!("failed to decode image: {err}"),
-            };
+            }
         } else {
             warn!("unknown fid {fid}");
         }
@@ -72,8 +72,9 @@ where
                             continue;
                         };
                         // We assume the code is running on a 64bit system, so it's safe to unwrap
-                        let fid =
-                            usize::try_from(base_32(src[index - 4..index].as_bytes())).unwrap() - 1;
+                        let fid = usize::try_from(base_32(&src.as_bytes()[index - 4..index]))
+                            .unwrap()
+                            - 1;
                         f(fid);
                     }
                 }

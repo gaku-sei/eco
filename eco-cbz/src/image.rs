@@ -111,7 +111,7 @@ impl<'a> Image<Cursor<&'a [u8]>> {
     }
 }
 
-impl Image<Cursor<Vec<u8>>> {
+impl ImageBuf {
     /// ## Errors
     ///
     /// Fails if the image format can't be guessed
@@ -136,14 +136,6 @@ impl Image<Cursor<Vec<u8>>> {
             inner: reader.into(),
             format,
         }
-    }
-
-    #[allow(clippy::missing_errors_doc)]
-    pub fn try_from_zip_file(mut file: ZipFile<'_>) -> Result<Self> {
-        #[allow(clippy::cast_possible_truncation)]
-        let mut buf = Vec::with_capacity(file.size() as usize);
-        file.read_to_end(&mut buf)?;
-        Self::try_from_buf(buf)
     }
 }
 
@@ -252,6 +244,20 @@ where
     }
 }
 
+impl<R> Image<R>
+where
+    R: Read + Seek,
+{
+    #[allow(clippy::missing_errors_doc)]
+    pub fn try_from_zip_file(mut file: ZipFile<'_, R>) -> Result<ImageBuf> {
+        #[allow(clippy::cast_possible_truncation)]
+        let mut buf = Vec::with_capacity(file.size() as usize);
+        file.read_to_end(&mut buf)?;
+
+        ImageBuf::try_from_buf(buf)
+    }
+}
+
 impl<R> TryFrom<Image<R>> for Vec<u8>
 where
     R: BufRead + Seek,
@@ -263,15 +269,18 @@ where
     }
 }
 
-impl<'a> TryFrom<ZipFile<'a>> for Image<Cursor<Vec<u8>>> {
+impl<'a, R> TryFrom<ZipFile<'a, R>> for ImageBuf
+where
+    R: Read + Seek,
+{
     type Error = Error;
 
-    fn try_from(file: ZipFile<'a>) -> Result<Self> {
-        Self::try_from_zip_file(file)
+    fn try_from(file: ZipFile<'a, R>) -> Result<Self> {
+        Image::<R>::try_from_zip_file(file)
     }
 }
 
-impl TryFrom<Vec<u8>> for Image<Cursor<Vec<u8>>> {
+impl TryFrom<Vec<u8>> for ImageBuf {
     type Error = Error;
 
     fn try_from(buf: Vec<u8>) -> Result<Self> {

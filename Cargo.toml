@@ -3,52 +3,53 @@ resolver = "2"
 members = ["eco", "eco-cbz", "eco-convert", "eco-merge", "eco-pack", "eco-view"]
 
 [workspace.package]
-rust-version = "1.80.1"
-edition = "2021"
+rust-version = "1.87.0"
+edition = "2024"
 
 [workspace.dependencies]
-anyhow = "1.0.86"
+anyhow = "1.0.98"
 async-recursion = "1.1.1"
-async-trait = "0.1.81"
+async-trait = "0.1.88"
 base64 = "0.22.1"
 camino = "1.1.9"
-clap = { version = "4.5.16", features = ["derive"] }
-cli-table = "0.4.9"
-chrono = "0.4.38"
-criterion = { version = "0.5.1", features = ["html_reports"] }
-dark-light = "1.1.1"
+clap = { version = "4.5.38", features = ["derive"] }
+cli-table = "0.5.0"
+chrono = "0.4.41"
+criterion = { version = "0.6.0", features = ["html_reports"] }
+dark-light = "2.0.0"
 dialoguer = "0.11.0"
-dioxus = { version = "^0.5.6", features = ["desktop"] }
+dioxus = { version = "^0.6.3", features = ["desktop"] }
 dunce = "1.0.5"
 eco-cbz = { path = "./eco-cbz" }
 eco-convert = { path = "./eco-convert" }
 eco-merge = { path = "./eco-merge" }
 eco-pack = { path = "./eco-pack" }
 eco-view = { path = "./eco-view" }
-epub = "2.1.2"
-futures = "0.3.30"
-glob = "0.3.1"
-home = "0.5.9"
-html5ever = "0.26.0" # Last updates are not compatible with markup5ever_rcdom
-iced = "0.12.1"
-image = "0.25.2"
-indicatif = "0.17.8"
+epub = "2.1.4"
+futures = "0.3.31"
+glob = "0.3.2"
+home = "0.5.11"
+html5ever = "0.27.0" # Last updates are not compatible with markup5ever_rcdom
+iced = "0.13.1"
+image = "0.25.6"
+indicatif = "0.17.11"
 isolang = "2.4"
-markup5ever_rcdom = "0.2.0" # Last updates are not compatible with html5ever
+markup5ever_rcdom = "0.3.0"
 mime = "0.3.17"
 mobi = "0.8.0"
 pdf = "0.9.0"
-reqwest = "0.12.7"
-reqwest-middleware = "0.3.3"
-reqwest-retry = "0.6.1"
-sanitize-filename = "0.5.0"
-serde = "1.0.209"
-serde_json = "1.0.127"
-serde_repr = "0.1.19"
+reqwest = "0.12.15"
+reqwest-middleware = "0.4.2"
+reqwest-retry = "0.7.0"
+sanitize-filename = "0.6.0"
+serde = "1.0.219"
+serde_json = "1.0.140"
+serde_repr = "0.1.20"
 tl = "0.7.8"
-thiserror = "1.0.63"
-tokio = { version = "1.39.3", features = ["full"] }
-tracing = "0.1.40"
-tracing-subscriber = "0.3.18"
-url = "2.5.2"
-zip = "2.2.0"
+thiserror = "2.0.12"
+tokio = { version = "1.45.1", features = ["full"] }
+tracing = "0.1.41"
+tracing-appender = "0.2.3"
+tracing-subscriber = "0.3.19"
+url = "2.5.4"
+zip = "4.0.0"

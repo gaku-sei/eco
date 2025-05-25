@@ -1,8 +1,12 @@
-use std::{fs::File, io::Read};
+use std::{
+    fs::File,
+    hint::black_box,
+    io::{Read, Seek},
+};
 
-use criterion::{black_box, criterion_group, criterion_main, Criterion};
+use criterion::{Criterion, criterion_group, criterion_main};
 use eco_cbz::Image;
-use zip::{read::ZipFile, ZipArchive};
+use zip::{ZipArchive, read::ZipFile};
 
 static INDEX: usize = 1;
 
@@ -10,7 +14,10 @@ fn try_from_bytes(bytes: &[u8]) {
     Image::try_from_bytes(bytes).unwrap();
 }
 
-fn try_from_zip_file(file: ZipFile) {
+fn try_from_zip_file<R>(file: ZipFile<'_, R>)
+where
+    R: Read + Seek,
+{
     Image::try_from_zip_file(file).unwrap();
 }
 
